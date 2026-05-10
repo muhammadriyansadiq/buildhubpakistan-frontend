@@ -30,6 +30,7 @@ export interface Product {
   dimensions?: string;
   categoryId: number;
   sellerId: number;
+  stockStatus?: string | null;
   category?: {
     id: number;
     name?: string;
@@ -114,6 +115,22 @@ export const useDeleteProductMutation = () => {
   return useMutation({
     mutationFn: async (id: number) => {
       const { data } = await apiClient.delete(`/products/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+};
+
+export const useUpdateStockStatusMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ productIds, stockStatus }: { productIds: number[]; stockStatus: string }) => {
+      const { data } = await apiClient.post('/products/stock-status', {
+        productId: productIds,
+        stockStatus: stockStatus,
+      });
       return data;
     },
     onSuccess: () => {

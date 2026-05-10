@@ -25,7 +25,9 @@ import {
   useCategories,
   useCreateProductMutation,
   useUpdateProductMutation,
-  useDeleteProductMutation
+  useDeleteProductMutation,
+  useUpdateStockStatusMutation,
+  Product
 } from '@/hooks/useProduct';
 import {
   useOrders,
@@ -290,7 +292,7 @@ export default function VendorDashboard() {
       maxPrice: priceRange.max || undefined
     },
     {
-      enabled: !!user?.id && !!user?.isProfileComplete && activeSection === 'products',
+      enabled: !!user?.id && !!user?.isProfileComplete && (activeSection === 'products' || activeSection === 'stock-status'),
       retry: false
     }
   );
@@ -320,6 +322,17 @@ export default function VendorDashboard() {
   const createProductMutation = useCreateProductMutation();
   const updateProductMutation = useUpdateProductMutation();
   const deleteProductMutation = useDeleteProductMutation();
+  const updateStockStatusMutation = useUpdateStockStatusMutation();
+
+  const handleUpdateStockStatus = async (productIds: number[], status: string) => {
+    try {
+      await updateStockStatusMutation.mutateAsync({ productIds, stockStatus: status });
+      toast.success(`Stock status updated to ${status}`);
+      setSelectedProducts([]); // Always clear selection after update
+    } catch (error) {
+      toast.error("Failed to update stock status");
+    }
+  };
 
   // Safe Data Extraction
   const categories = Array.isArray((categoriesData as any)?.data)
@@ -2026,21 +2039,17 @@ export default function VendorDashboard() {
                         {selectedProducts.length} selected
                       </span>
                       <button
-                        onClick={() => {
-                          alert(`Marked ${selectedProducts.length} products as IN STOCK`);
-                          setSelectedProducts([]);
-                        }}
-                        className="px-4 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2"
+                        onClick={() => handleUpdateStockStatus(selectedProducts, 'In Stock')}
+                        disabled={updateStockStatusMutation.isPending}
+                        className="px-4 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: '#10B981' }}
                       >
                         <CheckCircle2 size={16} /> Mark In Stock
                       </button>
                       <button
-                        onClick={() => {
-                          alert(`Marked ${selectedProducts.length} products as OUT OF STOCK`);
-                          setSelectedProducts([]);
-                        }}
-                        className="px-4 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2"
+                        onClick={() => handleUpdateStockStatus(selectedProducts, 'Out Of Stock')}
+                        disabled={updateStockStatusMutation.isPending}
+                        className="px-4 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: '#EF4444' }}
                       >
                         <XCircle size={16} /> Mark Out of Stock
@@ -2051,64 +2060,73 @@ export default function VendorDashboard() {
 
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mockProducts
-                    .filter((p) => p.name.toLowerCase().includes(stockSearchQuery.toLowerCase()))
-                    .map((product) => (
-                      <div
-                        key={product.id}
-                        className="border rounded-xl p-4 hover:shadow-md transition-shadow"
-                        style={{ borderColor: '#E2E8F0' }}
-                      >
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedProducts([...selectedProducts, product.id]);
-                              } else {
-                                setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          <img src={product.img} alt={product.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm mb-1 truncate" style={{ color: '#1E293B' }}>{product.name}</h4>
-                            <p className="text-xs mb-2" style={{ color: '#94A3B8' }}>SKU: {product.sku}</p>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => alert(`${product.name} marked as IN STOCK`)}
-                                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${product.status === 'active' ? 'text-white' : 'border'
-                                  }`}
-                                style={{
-                                  backgroundColor: product.status === 'active' ? '#10B981' : 'transparent',
-                                  borderColor: product.status === 'active' ? 'transparent' : '#10B981',
-                                  color: product.status === 'active' ? 'white' : '#10B981'
-                                }}
-                              >
-                                <CheckCircle2 size={12} className="inline mr-1" />
-                                In Stock
-                              </button>
-                              <button
-                                onClick={() => alert(`${product.name} marked as OUT OF STOCK`)}
-                                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${product.status === 'out_of_stock' ? 'text-white' : 'border'
-                                  }`}
-                                style={{
-                                  backgroundColor: product.status === 'out_of_stock' ? '#EF4444' : 'transparent',
-                                  borderColor: product.status === 'out_of_stock' ? 'transparent' : '#EF4444',
-                                  color: product.status === 'out_of_stock' ? 'white' : '#EF4444'
-                                }}
-                              >
-                                <XCircle size={12} className="inline mr-1" />
-                                Out of Stock
-                              </button>
+                  {products
+                    .filter((p: any) => (p.title || '').toLowerCase().includes(stockSearchQuery.toLowerCase()))
+                    .map((product: any) => {
+                      const isOutOfStock = product.stockStatus === "Out Of Stock" || product.stockStatus === null;
+                      const currentStatus = isOutOfStock ? "Out Of Stock" : "In Stock";
+
+                      return (
+                        <div
+                          key={product.id}
+                          className="border rounded-xl p-4 hover:shadow-md transition-shadow bg-white"
+                          style={{ borderColor: '#E2E8F0' }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedProducts([...selectedProducts, product.id]);
+                                } else {
+                                  setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                                }
+                              }}
+                              className="mt-1 accent-[#ef4136] cursor-pointer"
+                            />
+                            {product.images?.[0] ? (
+                              <img src={product.images[0]} alt={product.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <Package size={24} className="text-gray-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm mb-1 truncate" style={{ color: '#1E293B' }}>{product.title}</h4>
+                              <p className="text-xs mb-2" style={{ color: '#94A3B8' }}>SKU: {product.sku}</p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleUpdateStockStatus([product.id], currentStatus === 'In Stock' ? 'Out Of Stock' : 'In Stock')}
+                                  disabled={updateStockStatusMutation.isPending}
+                                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 ${currentStatus === 'In Stock'
+                                    ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                                    : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                                    }`}
+                                >
+                                  <div className={`w-2 h-2 rounded-full ${currentStatus === 'In Stock' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                  {currentStatus}
+                                  {updateStockStatusMutation.isPending && <RefreshCw size={10} className="animate-spin ml-1" />}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
+                {products.length === 0 && !productsLoading && (
+                  <div className="p-12 text-center">
+                    <Package size={48} className="mx-auto mb-4 text-gray-300" />
+                    <p className="text-gray-500">No products found.</p>
+                  </div>
+                )}
+                {productsLoading && (
+                  <div className="p-12 text-center">
+                    <RefreshCw size={32} className="mx-auto mb-4 animate-spin text-orange-500" />
+                    <p className="text-gray-500">Loading products...</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
