@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCart, useRemoveFromCartMutation, useUpdateCartQuantityMutation } from '@/hooks/useCart';
+import { toast } from 'sonner';
 import {
   Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart, Tag,
-  Shield, Truck, ArrowLeft, AlertCircle
+  Shield, Truck, ArrowLeft, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 const initialCartItems = [
@@ -45,36 +47,61 @@ const initialCartItems = [
 
 export default function Cart() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const { data: cartItemsData, isLoading: cartLoading } = useCart();
+  const cartItems = cartItemsData || [];
+  
+  const removeMutation = useRemoveFromCartMutation();
+  const updateMutation = useUpdateCartQuantityMutation();
+
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  const updateQuantity = (id: number, delta: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
+  const updateQuantity = (id: number, currentQty: number, delta: number) => {
+    const newQuantity = Math.max(1, currentQty + delta);
+    updateMutation.mutate(
+      { id, quantity: newQuantity },
+      {
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to update quantity');
+        },
+      }
     );
   };
 
   const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+    removeMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Item removed from cart');
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to remove item');
+      },
+    });
   };
 
   const applyCoupon = () => {
     if (couponCode.toUpperCase() === 'SAVE10') {
       setAppliedCoupon('SAVE10');
+      toast.success('Coupon applied successfully!');
+    } else {
+      toast.error('Invalid coupon code');
     }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const savings = cartItems.reduce((sum, item) => sum + (item.originalPrice - item.price) * item.quantity, 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
+  const savings = 0; // The mock used originalPrice - price, but API doesn't provide originalPrice in cart response directly.
   const discount = appliedCoupon ? subtotal * 0.1 : 0;
-  const shipping = subtotal > 50000 ? 0 : 1500;
-  const tax = (subtotal - discount) * 0.0;
+  const shipping = subtotal > 50000 || subtotal === 0 ? 0 : 1500;
+  const tax = 0;
   const total = subtotal - discount + shipping + tax;
+
+  if (cartLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <RefreshCw size={48} className="animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -176,10 +203,14 @@ export default function Cart() {
                   <div className="flex gap-4">
                     {/* Product Image */}
                     <div
-                      className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden cursor-pointer"
-                      onClick={() => router.push(`/product/${item.id}`)}
+                      className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden cursor-pointer bg-gray-100"
+                      onClick={() => router.push(`/product/${item.productId}`)}
                     >
-                      <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : 'https://placehold.co/120x120?text=No+Image'} 
+                        alt={item.product.title} 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
 
                     {/* Product Details */}
@@ -189,27 +220,17 @@ export default function Cart() {
                           <h3
                             className="font-bold mb-1 cursor-pointer hover:underline"
                             style={{ color: '#3e3e3e' }}
-                            onClick={() => router.push(`/product/${item.id}`)}
+                            onClick={() => router.push(`/product/${item.productId}`)}
                           >
-                            {item.name}
+                            {item.product.title}
                           </h3>
                           <p className="text-sm mb-1" style={{ color: '#64748B' }}>
-                            {item.brand} • {item.vendor}
+                            {item.product.user?.shopName || 'Official Store'}
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="font-bold" style={{ color: '#3e3e3e' }}>
-                              Rs. {item.price.toLocaleString()}
+                              Rs. {Number(item.product.price).toLocaleString()}
                             </span>
-                            {item.originalPrice > item.price && (
-                              <span className="text-sm line-through" style={{ color: '#94A3B8' }}>
-                                Rs. {item.originalPrice.toLocaleString()}
-                              </span>
-                            )}
-                            {item.originalPrice > item.price && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
-                                Save {Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
-                              </span>
-                            )}
                           </div>
                         </div>
                         <button
@@ -225,27 +246,27 @@ export default function Cart() {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center border rounded-xl" style={{ borderColor: '#E2E8F0' }}>
                             <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="p-2 hover:bg-gray-50 rounded-l-xl transition-colors"
-                              disabled={item.quantity <= 1}
+                              onClick={() => updateQuantity(item.id, item.quantity, -1)}
+                              className="p-2 hover:bg-gray-50 rounded-l-xl transition-colors disabled:opacity-50"
+                              disabled={item.quantity <= 1 || updateMutation.isPending}
                             >
                               <Minus size={16} style={{ color: item.quantity <= 1 ? '#CBD5E1' : '#64748B' }} />
                             </button>
-                            <span className="px-4 font-semibold" style={{ color: '#3e3e3e' }}>{item.quantity}</span>
+                            <span className="px-4 font-semibold" style={{ color: '#3e3e3e' }}>
+                              {updateMutation.isPending && updateMutation.variables?.id === item.id ? '...' : item.quantity}
+                            </span>
                             <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="p-2 hover:bg-gray-50 rounded-r-xl transition-colors"
+                              onClick={() => updateQuantity(item.id, item.quantity, 1)}
+                              className="p-2 hover:bg-gray-50 rounded-r-xl transition-colors disabled:opacity-50"
+                              disabled={updateMutation.isPending}
                             >
                               <Plus size={16} style={{ color: '#64748B' }} />
                             </button>
                           </div>
-                          <button className="flex items-center gap-1 text-sm font-medium hover:underline" style={{ color: '#64748B' }}>
-                            <Heart size={14} /> Save for later
-                          </button>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg" style={{ color: '#3e3e3e' }}>
-                            Rs. {(item.price * item.quantity).toLocaleString()}
+                            Rs. {(Number(item.product.price) * item.quantity).toLocaleString()}
                           </p>
                         </div>
                       </div>
