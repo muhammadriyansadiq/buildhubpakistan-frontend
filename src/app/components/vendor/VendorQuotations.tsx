@@ -90,19 +90,20 @@ export default function VendorQuotations() {
     const messages = [
       {
         id: 'initial',
-        sender: 'buyer',
+        senderId: rfq.userId,
         text: `Required Quantity: ${rfq.requiredQuantity} ${rfq.product?.unit || 'Units'}\n\nRequirement: ${rfq.additionalRequirement || 'Initial requirement request.'}`,
         timestamp: new Date(rfq.createdAt).toLocaleString(),
-        basePrice: undefined as number | undefined
       },
       ...(rfq.responses || []).map((res: any) => ({
         id: res.id,
-        sender: 'vendor',
+        senderId: res.userId,
         text: res.reply,
         basePrice: res.price,
         timestamp: new Date(res.createdAt).toLocaleString(),
       }))
     ];
+
+    const isAccepted = rfq.responses?.some((res: any) => res.quotationStatus === 'Accepted');
 
     return (
       <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -199,102 +200,111 @@ export default function VendorQuotations() {
             </div>
           </div>
 
-          {/* Chat Flow */}
           <div className="flex-1 px-6 pt-6 pb-4 overflow-y-auto relative bg-slate-50/50 overflow-x-hidden custom-scrollbar">
-            {/* Building Background Image with low opacity */}
-            <div
-              className="absolute inset-0 opacity-[0.05] pointer-events-none bg-cover bg-center bg-no-repeat mix-blend-multiply"
-              style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop")' }}
-            />
 
             <div className="relative z-10 space-y-6">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'vendor' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                  <div className={`max-w-[85%] sm:max-w-xl ${msg.sender === 'vendor' ? 'ml-12' : 'mr-12'}`}>
-                    <div className={`flex items-center gap-2 mb-1.5 ${msg.sender === 'vendor' ? 'justify-end' : 'justify-start'}`}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        {msg.sender === 'vendor' ? 'You (Quote)' : 'Buyer Request'}
-                      </span>
-                      <span className="text-[10px] font-medium text-slate-300">• {msg.timestamp}</span>
-                    </div>
+              {messages.map((msg) => {
+                const isMe = msg.senderId === userId;
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1 duration-300`}>
+                    <div className={`max-w-[75%] ${isMe ? 'ml-8' : 'mr-8'}`}>
+                      <div className={`flex items-center gap-2 mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        {isMe && (
+                          <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
+                            You
+                          </span>
+                        )}
+                        <span className="text-[9px] font-medium text-slate-300">{msg.timestamp}</span>
+                      </div>
 
-                    <div className={`p-5 rounded-3xl shadow-sm ${msg.sender === 'vendor'
-                      ? 'bg-slate-900 text-white rounded-tr-none'
-                      : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
-                      }`}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">
-                        {msg.text}
-                      </p>
+                      <div
+                        className="p-2.5 shadow-sm relative bg-white"
+                        style={{
+                          borderRadius: isMe ? '14px 2px 14px 14px' : '2px 14px 14px 14px',
+                          border: `1px solid ${isMe ? '#FEE2E2' : '#E2E8F0'}`,
+                          borderLeft: !isMe ? `2px solid #2563EB` : '1px solid #FEE2E2',
+                          borderRight: isMe ? `2px solid #EF4444` : '1px solid #E2E8F0',
+                        }}
+                      >
+                        <p className="text-[13px] leading-snug text-slate-600 font-medium whitespace-pre-wrap">
+                          {msg.text}
+                        </p>
 
-                      {msg.basePrice && (
-                        <div className={`mt-4 p-4 rounded-2xl flex items-center justify-between ${msg.sender === 'vendor' ? 'bg-white/10' : 'bg-red-50'
-                          }`}>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Offered Price</p>
-                            <p className="text-2xl font-black">Rs. {Number(msg.basePrice).toLocaleString()}</p>
+                        {msg.basePrice && (
+                          <div className="mt-2 flex items-center justify-between gap-3 p-2 bg-slate-900 rounded-lg text-white">
+                            <span className="text-[9px] font-bold uppercase tracking-tighter opacity-70">Quote:</span>
+                            <span className="text-sm font-black text-red-400">Rs. {Number(msg.basePrice).toLocaleString()}</span>
                           </div>
-                          {/* <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${msg.sender === 'vendor' ? 'bg-white/20' : 'bg-white'
-                            }`}>
-                          </div> */}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Response Input Area */}
-          <div className="px-6 pt-4 pb-6 bg-white border-t border-gray-100 shrink-0">
-            <div className="max-w-5xl mx-auto space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Price Input */}
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={quotePrice}
-                    onChange={(e) => setQuotePrice(e.target.value)}
-                    placeholder="Enter Quote Price (PKR)"
-                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all"
-                  />
-                </div>
-
-                {/* Message Input */}
-                <div className="md:col-span-2 flex items-center gap-4">
-                  <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner p-1 focus-within:border-red-200 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300">
-                    <textarea
-                      value={replyMessage}
-                      onChange={(e) => setReplyMessage(e.target.value)}
-                      placeholder="Add terms, conditions or a message for the buyer..."
-                      rows={1}
-                      className="w-full px-5 py-3.5 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-                      }}
+          {!isAccepted ? (
+            <div className="px-6 pt-4 pb-6 bg-white border-t border-gray-100 shrink-0">
+              <div className="max-w-5xl mx-auto space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Price Input */}
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={quotePrice}
+                      onChange={(e) => setQuotePrice(e.target.value)}
+                      placeholder="Enter Quote Price (PKR)"
+                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all"
                     />
                   </div>
-                  <button
-                    onClick={handleSendQuote}
-                    disabled={respondMutation.isPending}
-                    className="w-14 h-14 rounded-2xl text-white shadow-xl shadow-red-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
-                    style={{ backgroundColor: '#ef4136' }}
-                  >
-                    {respondMutation.isPending ? (
-                      <RefreshCw size={24} className="animate-spin" />
-                    ) : (
-                      <Send size={24} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                    )}
-                  </button>
+
+                  {/* Message Input */}
+                  <div className="md:col-span-2 flex items-center gap-4">
+                    <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner p-1 focus-within:border-red-200 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300">
+                      <textarea
+                        value={replyMessage}
+                        onChange={(e) => setReplyMessage(e.target.value)}
+                        placeholder="Add terms, conditions or a message for the buyer..."
+                        rows={1}
+                        className="w-full px-5 py-3.5 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={handleSendQuote}
+                      disabled={respondMutation.isPending}
+                      className="w-14 h-14 rounded-2xl text-white shadow-xl shadow-red-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
+                      style={{ backgroundColor: '#ef4136' }}
+                    >
+                      {respondMutation.isPending ? (
+                        <RefreshCw size={24} className="animate-spin" />
+                      ) : (
+                        <Send size={24} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+                <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                  Your quote will be visible to the buyer immediately
+                </p>
               </div>
-              <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                Your quote will be visible to the buyer immediately
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="px-6 py-8 bg-green-50 border-t border-green-100 shrink-0 flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+                <CheckCircle2 size={24} />
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-black text-green-800">Quotation Accepted!</p>
+                <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Waiting for buyer to complete the purchase order</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
