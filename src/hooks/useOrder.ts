@@ -32,6 +32,17 @@ export interface Order {
     email: string;
     phone: string;
   };
+  address?: {
+    id: number;
+    fullName: string;
+    phone: string;
+    email: string;
+    streetAddress: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    label: string;
+  };
 }
 
 export interface OrderStats {
@@ -52,6 +63,17 @@ export const useOrders = (filters?: any) => {
   });
 };
 
+export const useOrderDetails = (id: string | number) => {
+  return useQuery({
+    queryKey: ['order', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/orders/${id}`);
+      return data.data as Order;
+    },
+    enabled: !!id,
+  });
+};
+
 export const useOrderStats = (filters?: any) => {
   return useQuery({
     queryKey: ['order-stats', filters],
@@ -66,7 +88,7 @@ export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const { data } = await apiClient.patch(`/orders/${id}`, { orderStatus: status });
+      const { data } = await apiClient.patch(`/orders/status/${id}`, { orderStatus: status });
       return data;
     },
     onSuccess: () => {
@@ -98,15 +120,13 @@ export const useCreateOrder = () => {
   return useMutation({
     mutationFn: async (payload: {
       paymentMethod: string;
-      shippingAddress: string;
-      billingAddress: string;
+      addressId: string | number;
       quotationId?: string | number;
       receipt?: File | null;
     }) => {
       const formData = new FormData();
       formData.append('paymentMethod', payload.paymentMethod);
-      formData.append('shippingAddress', payload.shippingAddress);
-      formData.append('billingAddress', payload.billingAddress);
+      formData.append('addressId', payload.addressId.toString());
       
       if (payload.quotationId) {
         formData.append('quotationId', payload.quotationId.toString());

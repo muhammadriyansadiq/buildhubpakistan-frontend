@@ -13,6 +13,8 @@ import { useEffect } from 'react';
 import apiClient from '@/api/api-client';
 import { toast } from 'sonner';
 import BuyerQuotations from '@/app/components/buyer/BuyerQuotations';
+import { useOrders } from '@/hooks/useOrder';
+import { useQuotations } from '@/hooks/useQuotation';
 
 const menuItems = [
   { id: 'overview', label: 'Dashboard', icon: ShoppingBag },
@@ -85,13 +87,25 @@ export default function BuyerDashboard() {
   const [selectedRFQ, setSelectedRFQ] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
+  const [userId, setUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.id) setUserId(user.id);
+  }, []);
+
+  const { data: ordersData, isLoading: isOrdersLoading } = useOrders(userId ? { userId } : undefined);
+  const { data: rfqsData, isLoading: isRfqsLoading } = useQuotations(userId ? { userId } : undefined);
+  
+  const orders = ordersData?.data || [];
+  const rfqs = rfqsData?.data || [];
 
   const renderContent = () => {
     switch (section) {
       case 'overview':
-        return <DashboardOverview />;
+        return <DashboardOverview orders={orders} isOrdersLoading={isOrdersLoading} rfqs={rfqs} isRfqsLoading={isRfqsLoading} />;
       case 'orders':
-        return <OrdersSection selectedOrder={selectedOrder} setSelectedOrder={setSelectedOrder} />;
+        return <OrdersSection selectedOrder={selectedOrder} setSelectedOrder={setSelectedOrder} orders={orders} isOrdersLoading={isOrdersLoading} />;
       case 'quotations':
         return <BuyerQuotations selectedRFQ={selectedRFQ} setSelectedRFQ={setSelectedRFQ} newMessage={newMessage} setNewMessage={setNewMessage} />;
       case 'wishlist':
@@ -103,26 +117,28 @@ export default function BuyerDashboard() {
       case 'profile':
         return <ProfileSettingsSection />;
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview orders={orders} isOrdersLoading={isOrdersLoading} rfqs={rfqs} isRfqsLoading={isRfqsLoading} />;
     }
   };
 
-  function DashboardOverview() {
+  function DashboardOverview({ orders, isOrdersLoading, rfqs, isRfqsLoading }: { orders: any[], isOrdersLoading: boolean, rfqs: any[], isRfqsLoading: boolean }) {
+    const stats = [
+      { label: 'Total Orders', value: orders.length.toString(), change: 'Lifetime activity', color: '#ef4136', icon: Package },
+      { label: 'Active Quotations', value: rfqs.length.toString(), change: 'Pending & Quoted', color: '#2563EB', icon: MessageSquare },
+      { label: 'Total Spent', value: `Rs. ${orders.reduce((acc, o) => acc + Number(o.totalAmount), 0).toLocaleString()}`, change: 'Total volume', color: '#16A34A', icon: TrendingUp },
+      { label: 'Wishlist Items', value: '0', change: 'Keep track of items', color: '#F59E0B', icon: Heart },
+    ];
+
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="font-bold text-2xl mb-2" style={{ color: '#3e3e3e' }}>Welcome back, Ali Khan!</h2>
+          <h2 className="font-bold text-2xl mb-2" style={{ color: '#3e3e3e' }}>Welcome back!</h2>
           <p className="text-sm" style={{ color: '#94A3B8' }}>Here's what's happening with your orders and quotations</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Orders', value: '12', change: '+3 this month', color: '#ef4136', icon: Package },
-            { label: 'Active Quotations', value: '3', change: '2 pending reply', color: '#2563EB', icon: MessageSquare },
-            { label: 'Total Spent', value: 'Rs. 2.4M', change: '+12% vs last month', color: '#16A34A', icon: TrendingUp },
-            { label: 'Wishlist Items', value: '8', change: '3 on sale now', color: '#F59E0B', icon: Heart },
-          ].map((stat) => {
+          {stats.map((stat) => {
             const IconComponent = stat.icon;
             return (
               <div key={stat.label} className="bg-white rounded-2xl shadow-sm border p-5" style={{ borderColor: '#E2E8F0' }}>
@@ -140,7 +156,7 @@ export default function BuyerDashboard() {
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white rounded-2xl shadow-sm border" style={{ borderColor: '#E2E8F0' }}>
+        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
           <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
             <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>Recent Orders</h3>
             <button
@@ -152,37 +168,51 @@ export default function BuyerDashboard() {
             </button>
           </div>
           <div className="divide-y" style={{ borderColor: '#E2E8F0' }}>
-            {orders.slice(0, 3).map((order) => {
-              const status = statusConfig[order.status];
-              const StatusIcon = status.icon;
-              return (
-                <div key={order.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => router.push(`/buyer/dashboard/orders`)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-bold" style={{ color: '#3e3e3e' }}>{order.id}</h4>
-                        <span className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                          <StatusIcon size={12} /> {status.label}
-                        </span>
+            {isOrdersLoading ? (
+              <div className="p-12 flex justify-center">
+                <Loader2 className="animate-spin text-red-600" size={32} />
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="p-12 text-center">
+                <Package size={48} className="mx-auto mb-4 text-slate-200" />
+                <p className="text-slate-500 font-medium">No orders yet</p>
+              </div>
+            ) : (
+              orders.slice(0, 3).map((order) => {
+                const statusKey = order.orderStatus.toLowerCase();
+                const status = statusConfig[statusKey] || statusConfig['pending'];
+                const StatusIcon = status.icon;
+                return (
+                  <div key={order.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => router.push(`/buyer/dashboard/orders`)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-bold" style={{ color: '#3e3e3e' }}>ORD-{order.id}</h4>
+                          <span className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
+                            <StatusIcon size={12} /> {status.label}
+                          </span>
+                        </div>
+                        <p className="text-sm mb-1" style={{ color: '#64748B' }}>
+                          {order.items?.length || 0} items • {order.items?.[0]?.product?.brand || 'BHP Product'}
+                        </p>
+                        <p className="text-xs" style={{ color: '#94A3B8' }}>Ordered on {new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
-                      <p className="text-sm mb-1" style={{ color: '#64748B' }}>{order.items} items • {order.vendor}</p>
-                      <p className="text-xs" style={{ color: '#94A3B8' }}>Ordered on {new Date(order.date).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-lg mb-1" style={{ color: '#3e3e3e' }}>Rs. {order.total.toLocaleString()}</p>
-                      <button className="text-sm font-medium flex items-center gap-1" style={{ color: '#ef4136' }}>
-                        Track Order <ChevronRight size={14} />
-                      </button>
+                      <div className="text-right">
+                        <p className="font-bold text-lg mb-1" style={{ color: '#3e3e3e' }}>Rs. {Number(order.totalAmount).toLocaleString()}</p>
+                        <button className="text-sm font-medium flex items-center gap-1" style={{ color: '#ef4136' }}>
+                          Track Order <ChevronRight size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Active Quotations */}
-        <div className="bg-white rounded-2xl shadow-sm border" style={{ borderColor: '#E2E8F0' }}>
+        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden mt-6" style={{ borderColor: '#E2E8F0' }}>
           <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
             <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>Active Quotations</h3>
             <button
@@ -194,39 +224,59 @@ export default function BuyerDashboard() {
             </button>
           </div>
           <div className="divide-y" style={{ borderColor: '#E2E8F0' }}>
-            {quotations.slice(0, 2).map((rfq) => {
-              const status = statusConfig[rfq.status];
-              const StatusIcon = status.icon;
-              return (
-                <div key={rfq.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => router.push(`/buyer/dashboard/quotations`)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-bold" style={{ color: '#3e3e3e' }}>{rfq.title}</h4>
-                        <span className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                          <StatusIcon size={12} /> {status.label}
-                        </span>
+            {isRfqsLoading ? (
+              <div className="p-12 flex justify-center">
+                <Loader2 className="animate-spin text-red-600" size={32} />
+              </div>
+            ) : rfqs.length === 0 ? (
+              <div className="p-12 text-center">
+                <MessageSquare size={48} className="mx-auto mb-4 text-slate-200" />
+                <p className="text-slate-500 font-medium">No quotations yet</p>
+              </div>
+            ) : (
+              rfqs.slice(0, 3).map((rfq: any) => {
+                const latestResponse = rfq.responses?.[rfq.responses.length - 1];
+                const statusKey = (latestResponse?.quotationStatus || 'Pending').toLowerCase();
+                const status = statusConfig[statusKey] || statusConfig['pending'];
+                const StatusIcon = status.icon;
+
+                return (
+                  <div key={rfq.id} className="p-5 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => router.push(`/buyer/dashboard/quotations`)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-bold" style={{ color: '#3e3e3e' }}>{rfq.product?.title || 'BHP Product Request'}</h4>
+                          <span className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
+                            <StatusIcon size={12} /> {status.label}
+                          </span>
+                        </div>
+                        <p className="text-sm mb-1" style={{ color: '#64748B' }}>
+                          Qty: {rfq.requiredQuantity} • {rfq.responses?.length || 0} messages
+                        </p>
+                        <p className="text-xs" style={{ color: '#94A3B8' }}>Created on {new Date(rfq.createdAt).toLocaleDateString()}</p>
                       </div>
-                      <p className="text-sm mb-1" style={{ color: '#64748B' }}>{rfq.vendor} • {rfq.messages} messages</p>
-                      <p className="text-xs" style={{ color: '#94A3B8' }}>Last updated: {rfq.lastUpdate}</p>
+                      <button className="text-sm font-medium flex items-center gap-1" style={{ color: '#ef4136' }}>
+                        View <ChevronRight size={14} />
+                      </button>
                     </div>
-                    <button className="text-sm font-medium flex items-center gap-1" style={{ color: '#ef4136' }}>
-                      View <ChevronRight size={14} />
-                    </button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  function OrdersSection({ selectedOrder, setSelectedOrder }: any) {
+  function OrdersSection({ selectedOrder, setSelectedOrder, orders, isOrdersLoading }: any) {
     if (selectedOrder) {
-      const order = orders.find(o => o.id === selectedOrder);
+      const order = orders.find((o: any) => `ORD-${o.id}` === selectedOrder || o.id.toString() === selectedOrder);
       if (!order) return null;
+
+      const statusKey = order.orderStatus.toLowerCase();
+      const status = statusConfig[statusKey] || statusConfig['pending'];
+      const StatusIcon = status.icon;
 
       return (
         <div className="space-y-6">
@@ -241,44 +291,38 @@ export default function BuyerDashboard() {
           <div className="bg-white rounded-2xl shadow-sm border p-6" style={{ borderColor: '#E2E8F0' }}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="font-bold text-2xl mb-1" style={{ color: '#3e3e3e' }}>Order #{order.id}</h2>
-                <p className="text-sm" style={{ color: '#64748B' }}>Placed on {new Date(order.date).toLocaleDateString()}</p>
+                <h2 className="font-bold text-2xl mb-1" style={{ color: '#3e3e3e' }}>Order #ORD-{order.id}</h2>
+                <p className="text-sm" style={{ color: '#64748B' }}>Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
-                {(() => {
-                  const status = statusConfig[order.status];
-                  const StatusIcon = status.icon;
-                  return (
-                    <span className="inline-flex px-3 py-2 rounded-xl text-sm font-semibold items-center gap-2" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                      <StatusIcon size={16} /> {status.label}
-                    </span>
-                  );
-                })()}
+                <span className="inline-flex px-3 py-2 rounded-xl text-sm font-semibold items-center gap-2" style={{ color: status.color, backgroundColor: status.bgColor }}>
+                  <StatusIcon size={16} /> {status.label}
+                </span>
               </div>
             </div>
 
             {/* Order Tracking Stepper */}
-            <div className="mb-8">
+            <div className="mb-8 overflow-x-auto pb-4">
               <h3 className="font-bold mb-4" style={{ color: '#3e3e3e' }}>Order Status</h3>
-              <div className="relative">
-                <div className="absolute top-5 left-0 right-0 h-0.5" style={{ backgroundColor: '#E2E8F0' }} />
+              <div className="relative min-w-[600px] px-4">
+                <div className="absolute top-5 left-10 right-10 h-0.5" style={{ backgroundColor: '#E2E8F0' }} />
                 <div
-                  className="absolute top-5 left-0 h-0.5 transition-all duration-500"
+                  className="absolute top-5 left-10 h-0.5 transition-all duration-500"
                   style={{
                     backgroundColor: '#ef4136',
-                    width: order.status === 'delivered' ? '100%' : order.status === 'in-transit' ? '66%' : order.status === 'processing' ? '33%' : '0%'
+                    width: order.orderStatus === 'Delivered' ? '100%' : order.orderStatus === 'Shipped' ? '66%' : order.orderStatus === 'Processing' ? '33%' : '5%'
                   }}
                 />
                 <div className="relative flex justify-between">
                   {[
-                    { label: 'Order Placed', date: '05 May, 10:30 AM', active: true },
-                    { label: 'Processing', date: '05 May, 2:15 PM', active: order.status !== 'cancelled' },
-                    { label: 'In Transit', date: order.status === 'in-transit' || order.status === 'delivered' ? '06 May, 9:00 AM' : 'Pending', active: order.status === 'in-transit' || order.status === 'delivered' },
-                    { label: 'Delivered', date: order.status === 'delivered' ? '07 May, 3:45 PM' : 'Pending', active: order.status === 'delivered' }
+                    { label: 'Order Placed', active: true },
+                    { label: 'Processing', active: ['Processing', 'Shipped', 'Delivered'].includes(order.orderStatus) },
+                    { label: 'Shipped', active: ['Shipped', 'Delivered'].includes(order.orderStatus) },
+                    { label: 'Delivered', active: order.orderStatus === 'Delivered' }
                   ].map((step, idx) => (
                     <div key={idx} className="flex flex-col items-center" style={{ width: '25%' }}>
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${step.active ? 'shadow-lg' : ''}`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${step.active ? 'shadow-lg shadow-red-100' : ''}`}
                         style={{
                           backgroundColor: step.active ? '#ef4136' : '#E2E8F0',
                           color: 'white'
@@ -286,10 +330,9 @@ export default function BuyerDashboard() {
                       >
                         {step.active ? <CheckCircle2 size={20} /> : <Clock size={20} style={{ color: '#94A3B8' }} />}
                       </div>
-                      <p className="text-xs font-semibold text-center mb-1" style={{ color: step.active ? '#3e3e3e' : '#94A3B8' }}>
+                      <p className="text-xs font-bold text-center mb-1" style={{ color: step.active ? '#3e3e3e' : '#94A3B8' }}>
                         {step.label}
                       </p>
-                      <p className="text-xs text-center" style={{ color: '#94A3B8' }}>{step.date}</p>
                     </div>
                   ))}
                 </div>
@@ -300,18 +343,22 @@ export default function BuyerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="p-4 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
                 <h4 className="font-bold mb-3" style={{ color: '#3e3e3e' }}>Delivery Address</h4>
-                <p className="text-sm mb-1" style={{ color: '#3e3e3e' }}>Ali Khan</p>
+                <p className="text-sm mb-1 font-bold" style={{ color: '#3e3e3e' }}>{order.address?.fullName || order.user?.fullName}</p>
                 <p className="text-sm" style={{ color: '#64748B' }}>
-                  123 Model Town, Block C<br />
-                  Lahore, Punjab 54000<br />
-                  Phone: +92 300 1234567
+                  {order.address?.streetAddress}, {order.address?.city}<br />
+                  {order.address?.province} {order.address?.postalCode}<br />
+                  <span className="font-medium">Phone: {order.address?.phone || order.user?.phone}</span>
                 </p>
               </div>
               <div className="p-4 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
-                <h4 className="font-bold mb-3" style={{ color: '#3e3e3e' }}>Payment Method</h4>
-                <p className="text-sm mb-1" style={{ color: '#3e3e3e' }}>Cash on Delivery</p>
+                <h4 className="font-bold mb-3" style={{ color: '#3e3e3e' }}>Payment Information</h4>
+                <p className="text-sm mb-1" style={{ color: '#3e3e3e' }}><span className="font-bold">Method:</span> {order.paymentMethod}</p>
+                <p className="text-sm mb-1" style={{ color: '#3e3e3e' }}><span className="font-bold">Transaction ID:</span> {order.transactionId || 'N/A'}</p>
                 <p className="text-sm" style={{ color: '#64748B' }}>
-                  Payment will be collected at delivery
+                  Status: <span className="font-bold px-2 py-0.5 rounded-lg text-[10px] uppercase" style={{ 
+                    backgroundColor: order.paymentStatus === 'Paid' ? '#DCFCE7' : '#FEF3C7',
+                    color: order.paymentStatus === 'Paid' ? '#16A34A' : '#F59E0B'
+                  }}>{order.paymentStatus}</span>
                 </p>
               </div>
             </div>
@@ -319,40 +366,31 @@ export default function BuyerDashboard() {
             {/* Order Items */}
             <div>
               <h4 className="font-bold mb-3" style={{ color: '#3e3e3e' }}>Order Items</h4>
-              <div className="border rounded-xl divide-y" style={{ borderColor: '#E2E8F0' }}>
-                {[
-                  { name: 'OPC Cement 50kg', brand: 'Bestway', qty: 50, price: 1200, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=80&h=80&fit=crop' },
-                  { name: 'TMT Steel Bar 10mm', brand: 'Ittefaq', qty: 20, price: 8500, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=80&h=80&fit=crop' },
-                  { name: 'Floor Tiles 60×60cm', brand: 'Master Tiles', qty: 100, price: 2200, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=80&h=80&fit=crop' },
-                ].map((item, idx) => (
-                  <div key={idx} className="p-4 flex items-center gap-4">
-                    <img src={item.img} alt={item.name} className="w-16 h-16 rounded-lg object-cover" />
+              <div className="border rounded-xl divide-y overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                {order.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                    <img 
+                      src={item.product?.images?.[0] || 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=80&h=80&fit=crop'} 
+                      alt={item.product?.title} 
+                      className="w-16 h-16 rounded-lg object-cover shadow-sm" 
+                    />
                     <div className="flex-1">
-                      <h5 className="font-semibold mb-0.5" style={{ color: '#3e3e3e' }}>{item.name}</h5>
-                      <p className="text-sm" style={{ color: '#64748B' }}>{item.brand} • Qty: {item.qty}</p>
+                      <h5 className="font-bold mb-0.5" style={{ color: '#3e3e3e' }}>{item.product?.title}</h5>
+                      <p className="text-xs font-medium" style={{ color: '#64748B' }}>{item.product?.brand} • Qty: {item.quantity} {item.product?.unit}</p>
                     </div>
-                    <p className="font-bold" style={{ color: '#3e3e3e' }}>Rs. {(item.price * item.qty).toLocaleString()}</p>
+                    <div className="text-right">
+                      <p className="font-bold" style={{ color: '#3e3e3e' }}>Rs. {Number(item.totalItemPrice).toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Rs. {Number(item.priceAtPurchase).toLocaleString()} / {item.product?.unit}</p>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Order Summary */}
-              <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#64748B' }}>Subtotal</span>
-                    <span style={{ color: '#3e3e3e' }}>Rs. 45,000</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#64748B' }}>Delivery Charges</span>
-                    <span style={{ color: '#3e3e3e' }}>Rs. 600</span>
-                  </div>
-                  <div className="border-t pt-2" style={{ borderColor: '#E2E8F0' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold" style={{ color: '#3e3e3e' }}>Total</span>
-                      <span className="font-bold text-xl" style={{ color: '#ef4136' }}>Rs. {order.total.toLocaleString()}</span>
-                    </div>
-                  </div>
+              <div className="mt-4 p-5 rounded-2xl" style={{ backgroundColor: '#F8F9FA' }}>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-500" style={{ color: '#64748B' }}>Total Amount</span>
+                  <span className="font-black text-2xl" style={{ color: '#ef4136' }}>Rs. {Number(order.totalAmount).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -376,52 +414,79 @@ export default function BuyerDashboard() {
                 placeholder="Search orders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border rounded-xl text-sm outline-none"
+                className="pl-10 pr-4 py-2 border rounded-xl text-sm outline-none bg-white"
                 style={{ borderColor: '#E2E8F0', width: '250px' }}
               />
             </div>
-            <button className="p-2 border rounded-xl hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0' }}>
+            <button className="p-2 border rounded-xl hover:bg-gray-50 transition-colors bg-white" style={{ borderColor: '#E2E8F0' }}>
               <Filter size={18} style={{ color: '#64748B' }} />
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          {orders.map((order) => {
-            const status = statusConfig[order.status];
-            const StatusIcon = status.icon;
-            return (
-              <div
-                key={order.id}
-                className="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-lg transition-all cursor-pointer"
-                style={{ borderColor: '#E2E8F0' }}
-                onClick={() => setSelectedOrder(order.id)}
+          {isOrdersLoading ? (
+            <div className="flex flex-col items-center justify-center p-20 bg-white rounded-3xl border border-dashed border-slate-200">
+              <Loader2 className="animate-spin text-red-600 mb-4" size={40} />
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Fetching your orders...</p>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-dashed p-16 text-center" style={{ borderColor: '#E2E8F0' }}>
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package size={40} className="text-slate-200" />
+              </div>
+              <p className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">No orders found</p>
+              <p className="text-slate-400 text-sm mb-8">You haven't placed any orders yet. Start shopping!</p>
+              <button 
+                onClick={() => router.push('/')}
+                className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>{order.id}</h3>
-                      <span className="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                        <StatusIcon size={14} /> {status.label}
-                      </span>
+                Explore Marketplace
+              </button>
+            </div>
+          ) : (
+            orders.map((order: any) => {
+              const statusKey = order.orderStatus.toLowerCase();
+              const status = statusConfig[statusKey] || statusConfig['pending'];
+              const StatusIcon = status.icon;
+              return (
+                <div
+                  key={order.id}
+                  className="bg-white rounded-3xl shadow-sm border p-6 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                  style={{ borderColor: '#E2E8F0' }}
+                  onClick={() => setSelectedOrder(`ORD-${order.id}`)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-4">
+                        <h3 className="font-black text-xl tracking-tight" style={{ color: '#3e3e3e' }}>ORD-{order.id}</h3>
+                        <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm" style={{ color: status.color, backgroundColor: status.bgColor }}>
+                          <StatusIcon size={14} /> {status.label}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 items-center">
+                        <p className="text-xs font-bold flex items-center gap-1.5 text-slate-500">
+                          <Package size={14} /> {order.items?.length || 0} Items
+                        </p>
+                        <p className="text-xs font-bold flex items-center gap-1.5 text-slate-500">
+                          <Building size={14} /> {order.items?.[0]?.product?.brand || 'BHP Vendor'}
+                        </p>
+                        <p className="text-xs font-bold flex items-center gap-1.5 text-slate-400 uppercase tracking-tighter">
+                          Ordered {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm mb-1" style={{ color: '#64748B' }}>
-                      {order.items} items • Vendor: {order.vendor}
-                    </p>
-                    <p className="text-xs" style={{ color: '#94A3B8' }}>
-                      Ordered on {new Date(order.date).toLocaleDateString()} • Est. Delivery: {order.estimatedDelivery}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-xl mb-2" style={{ color: '#3e3e3e' }}>Rs. {order.total.toLocaleString()}</p>
-                    <button className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1 ml-auto" style={{ backgroundColor: '#ef4136', color: 'white' }}>
-                      Track Order <ChevronRight size={14} />
-                    </button>
+                    <div className="text-right">
+                      <p className="font-black text-2xl mb-3 tracking-tighter" style={{ color: '#3e3e3e' }}>Rs. {Number(order.totalAmount).toLocaleString()}</p>
+                      <button className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 ml-auto shadow-lg shadow-red-100 group-hover:scale-105 transition-all" style={{ backgroundColor: '#ef4136', color: 'white' }}>
+                        Track Order <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     );

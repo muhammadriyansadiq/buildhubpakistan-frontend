@@ -10,7 +10,7 @@ import {
   ChevronDown, Tag, DollarSign, Box, RefreshCw, Download,
   Calendar, MapPin, User, Phone, ChevronUp, FileText, Send,
   Mail, MessageSquare, Store, Camera, Building2, CreditCard,
-  Zap, Award, Shield, ChevronLeft, X
+  Zap, Award, Shield, ChevronLeft, X, Loader2
 } from 'lucide-react';
 import {
   useQuotations,
@@ -35,6 +35,7 @@ import {
   useOrderStats,
   useUpdateOrderStatus,
   useUploadOrderImage,
+  useOrderDetails,
   Order
 } from '@/hooks/useOrder';
 import {
@@ -317,6 +318,7 @@ export default function VendorDashboard() {
   };
   const updateStatusMutation = useUpdateOrderStatus();
   const uploadImageMutation = useUploadOrderImage();
+  const { data: detailedOrder, isLoading: isOrderDetailsLoading } = useOrderDetails(selectedOrder?.id || '');
 
   const orders = ordersData?.data || [];
   const totalOrders = ordersData?.total || 0;
@@ -1157,7 +1159,7 @@ export default function VendorDashboard() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h3 className="text-xl font-bold text-gray-900">Order #ORD-{selectedOrder.id}</h3>
-                      {statusBadge(selectedOrder.orderStatus)}
+                      {statusBadge(detailedOrder?.orderStatus || selectedOrder.orderStatus)}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Placed on {new Date(selectedOrder.createdAt).toLocaleString()}</p>
                   </div>
@@ -1168,76 +1170,97 @@ export default function VendorDashboard() {
 
                 {/* Modal Body */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                  {/* Items List */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Order Items</h4>
-                    <div className="space-y-3">
-                      {selectedOrder.items.map((item: OrderItem) => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                          <img src={item.product.images[0]} alt="" className="w-16 h-16 rounded-xl object-cover shadow-sm" />
-                          <div className="flex-1">
-                            <h5 className="font-bold text-gray-900">{item.product.title}</h5>
-                            <p className="text-xs text-gray-500">{item.product.brand} • {item.quantity} {item.product.unit}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-gray-900">Rs. {parseFloat(item.totalItemPrice).toLocaleString()}</div>
-                            <p className="text-[10px] text-gray-500">Rs. {parseFloat(item.priceAtPurchase).toLocaleString()} / unit</p>
-                          </div>
-                        </div>
-                      ))}
+                  {isOrderDetailsLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 className="w-10 h-10 animate-spin text-[#ef4136] mb-4" />
+                      <p className="text-sm font-medium text-gray-500">Fetching order details...</p>
                     </div>
-                  </div>
-
-                  {/* Customer & Shipping */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Customer Info</h4>
-                      <div className="space-y-1">
-                        <div className="font-bold text-gray-900">{selectedOrder.user.fullName}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2"><Mail size={14} /> {selectedOrder.user.email}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2"><Phone size={14} /> {selectedOrder.user.phone}</div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Shipping Address</h4>
-                      <div className="p-4 rounded-2xl bg-orange-50 border border-orange-100">
-                        <div className="text-sm font-medium text-orange-900 flex items-start gap-2">
-                          <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-                          {selectedOrder.shippingAddress}
+                  ) : (
+                    <>
+                      {/* Items List */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Order Items</h4>
+                        <div className="space-y-3">
+                          {(detailedOrder?.items || selectedOrder.items).map((item: any) => (
+                            <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                              <img src={item.product?.images?.[0] || 'https://via.placeholder.com/150'} alt="" className="w-16 h-16 rounded-xl object-cover shadow-sm" />
+                              <div className="flex-1">
+                                <h5 className="font-bold text-gray-900">{item.product?.title || 'Unknown Product'}</h5>
+                                <p className="text-xs text-gray-500">{item.product?.brand} • {item.quantity} {item.product?.unit}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-gray-900">Rs. {parseFloat(item.totalItemPrice).toLocaleString()}</div>
+                                <p className="text-[10px] text-gray-500">Rs. {parseFloat(item.priceAtPurchase).toLocaleString()} / unit</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Delivery Proof Section */}
-                  <div className="pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Delivery Proof</h4>
-                    {selectedOrder.vendorImage ? (
-                      <div className="relative group rounded-2xl overflow-hidden aspect-video border-2 border-dashed border-gray-200">
-                        <img src={selectedOrder.vendorImage} alt="Delivery proof" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                          <label className="cursor-pointer bg-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl">
-                            Change Proof
+                      {/* Customer & Shipping */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Customer Info</h4>
+                          <div className="space-y-1">
+                            <div className="font-bold text-gray-900">{detailedOrder?.user?.fullName || selectedOrder.user.fullName}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                              <Mail size={14} /> {detailedOrder?.user?.email || selectedOrder.user.email}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                              <Phone size={14} /> {detailedOrder?.user?.phone || selectedOrder.user.phone}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400">Shipping Address</h4>
+                          <div className="p-4 rounded-2xl bg-orange-50 border border-orange-100">
+                            <div className="text-sm font-medium text-orange-900 flex items-start gap-2">
+                              <MapPin size={16} className="mt-0.5 flex-shrink-0" />
+                              {detailedOrder?.address ? (
+                                <span>
+                                  {detailedOrder.address.streetAddress}, {detailedOrder.address.city}, {detailedOrder.address.province}, {detailedOrder.address.postalCode}
+                                </span>
+                              ) : (
+                                <span>{selectedOrder.shippingAddress}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Delivery Proof Section */}
+                      <div className="pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Delivery Proof</h4>
+                        {(detailedOrder?.vendorImage || selectedOrder.vendorImage) ? (
+                          <div className="relative group rounded-2xl overflow-hidden aspect-video border-2 border-dashed border-gray-200">
+                            <img src={detailedOrder?.vendorImage || selectedOrder.vendorImage || ''} alt="Delivery proof" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                              <label className="cursor-pointer bg-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl">
+                                Change Proof
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleUploadProof(selectedOrder.id, e.target.files[0])} />
+                              </label>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all cursor-pointer group">
+                            <Upload size={32} className="text-gray-300 group-hover:text-orange-400 mb-2" />
+                            <span className="text-sm font-bold text-gray-400 group-hover:text-orange-900">Upload Delivery Proof</span>
+                            <p className="text-[10px] text-gray-400 mt-1 uppercase">JPG, PNG up to 5MB</p>
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleUploadProof(selectedOrder.id, e.target.files[0])} />
                           </label>
-                        </div>
+                        )}
                       </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all cursor-pointer group">
-                        <Upload size={32} className="text-gray-300 group-hover:text-orange-400 mb-2" />
-                        <span className="text-sm font-bold text-gray-400 group-hover:text-orange-900">Upload Delivery Proof</span>
-                        <p className="text-[10px] text-gray-400 mt-1 uppercase">JPG, PNG up to 5MB</p>
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleUploadProof(selectedOrder.id, e.target.files[0])} />
-                      </label>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Modal Footer */}
                 <div className="p-6 bg-gray-50 border-t flex items-center justify-between" style={{ borderColor: '#F1F5F9' }}>
                   <div className="text-right flex-1">
                     <p className="text-xs text-gray-500 font-bold uppercase">Total Order Amount</p>
-                    <div className="text-2xl font-black text-gray-900">Rs. {parseFloat(selectedOrder.totalAmount).toLocaleString()}</div>
+                    <div className="text-2xl font-black text-gray-900">
+                      Rs. {parseFloat(detailedOrder?.totalAmount || selectedOrder.totalAmount).toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>
