@@ -64,10 +64,10 @@ export default function RegisterPage() {
   useEffect(() => {
     const savedRole = sessionStorage.getItem('register_role') as Role;
     if (savedRole) setSelectedRole(savedRole);
-    
+
     const savedForm = sessionStorage.getItem('register_form');
     if (savedForm) setForm(JSON.parse(savedForm));
-    
+
     const savedUser = sessionStorage.getItem('register_user');
     if (savedUser) setRegisteredUser(JSON.parse(savedUser));
   }, []);
@@ -88,7 +88,7 @@ export default function RegisterPage() {
       }
     }
   }, [registeredUser]);
-  
+
   const { mutateAsync: registerStep1, isPending: isLoading } = useRegisterMutation();
   const { mutateAsync: verifyOtpStep2, isPending: isVerifyingOtp } = useVerifyOtpMutation();
 
@@ -183,12 +183,12 @@ export default function RegisterPage() {
       toast.error("Role information missing. Please go back and select a role.");
       return;
     }
-    
+
     try {
       const otpString = otp.join('');
       const phoneToVerify = registeredUser?.phone || form.phone;
       const data = await verifyOtpStep2({ otp: otpString, phone: phoneToVerify });
-      
+
       if (data && (data.success || data.statusCode === 200 || data.data)) {
         // Clear storage on complete
         sessionStorage.removeItem('register_role');
@@ -198,7 +198,7 @@ export default function RegisterPage() {
         // Elevate onboardToken to token if verified
         const obToken = localStorage.getItem('onboardToken');
         if (obToken) {
-           localStorage.setItem('token', obToken);
+          localStorage.setItem('token', obToken);
         }
 
         if (data.data.user) {
@@ -238,7 +238,9 @@ export default function RegisterPage() {
         <div className="w-full max-w-2xl">
           {/* Logo */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <img src={logoSvg} alt="BHP Logo" className="h-10 w-auto" />
+            {/* <img src={logoSvg} alt="BHP Logo" className="h-10 w-auto" /> */}
+            <img src={logoSvg.src} alt="BHP Logo" className="h-10 w-auto" />
+
           </div>
 
           {/* Step indicator */}
@@ -438,7 +440,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                   style={{ backgroundColor: '#ef4136' }}
                 >
                   {isLoading ? 'Creating Account...' : 'Continue'}
@@ -455,7 +457,7 @@ export default function RegisterPage() {
                 <Shield size={36} style={{ color: '#ef4136' }} />
               </div>
               <h2 className="text-2xl font-bold mb-2" style={{ color: '#000000' }}>Verify Your Phone</h2>
-              
+
               {registeredUser && (
                 <div className="mb-4 p-3 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
                   Welcome <strong>{registeredUser.fullName}</strong>! Your account has been created.
@@ -510,7 +512,7 @@ export default function RegisterPage() {
                 onClick={handleOtpComplete}
                 disabled={isVerifyingOtp || otp.some(d => !d)}
                 className="w-full py-3.5 rounded-xl text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-70"
-                style={{ 
+                style={{
                   backgroundColor: otp.every(d => d) ? '#ef4136' : '#94A3B8',
                   cursor: otp.every(d => d) ? 'pointer' : 'not-allowed'
                 }}

@@ -49,7 +49,7 @@ export default function Cart() {
   const router = useRouter();
   const { data: cartItemsData, isLoading: cartLoading } = useCart();
   const cartItems = cartItemsData || [];
-  
+
   const removeMutation = useRemoveFromCartMutation();
   const updateMutation = useUpdateCartQuantityMutation();
 
@@ -175,7 +175,7 @@ export default function Cart() {
             </div>
 
             {/* Free Shipping Banner */}
-            {subtotal < 50000 && (
+            {/* {subtotal < 50000 && (
               <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border p-4 mb-4 flex items-center gap-3" style={{ borderColor: '#BFDBFE' }}>
                 <AlertCircle size={20} style={{ color: '#2563EB' }} />
                 <div className="flex-1">
@@ -190,7 +190,7 @@ export default function Cart() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Cart Items List */}
             <div className="space-y-4">
@@ -206,10 +206,10 @@ export default function Cart() {
                       className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden cursor-pointer bg-gray-100"
                       onClick={() => router.push(`/product/${item.productId}`)}
                     >
-                      <img 
-                        src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : 'https://placehold.co/120x120?text=No+Image'} 
-                        alt={item.product.title} 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : 'https://placehold.co/120x120?text=No+Image'}
+                        alt={item.product.title}
+                        className="w-full h-full object-cover"
                       />
                     </div>
 
@@ -235,7 +235,7 @@ export default function Cart() {
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 size={18} style={{ color: '#EF4444' }} />
                         </button>
@@ -348,14 +348,14 @@ export default function Cart() {
               {/* Checkout Button */}
               <button
                 onClick={() => router.push('/checkout')}
-                className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mb-3"
+                className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mb-3 cursor-pointer"
                 style={{ backgroundColor: '#ef4136' }}
               >
                 Proceed to Checkout <ArrowRight size={20} />
               </button>
               <button
                 onClick={() => router.push('/products')}
-                className="w-full py-3 rounded-xl font-semibold border-2 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                className="w-full py-3 rounded-xl font-semibold border-2 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer"
                 style={{ borderColor: '#E2E8F0', color: '#3e3e3e' }}
               >
                 Continue Shopping

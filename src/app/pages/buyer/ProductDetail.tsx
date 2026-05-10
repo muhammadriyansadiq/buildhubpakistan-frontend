@@ -103,13 +103,13 @@ export default function ProductDetail() {
     <div style={{ backgroundColor: '#F8FAFC' }}>
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-            <button onClick={() => router.push('/')} className="hover:underline" style={{ color: '#0D2E5E' }}>Home</button>
-            <ChevronRight size={12} />
-            <button className="hover:underline" style={{ color: '#0D2E5E' }}>{product.category?.title || 'Products'}</button>
-            <ChevronRight size={12} />
-            <span style={{ color: '#64748B' }}>{product.title}</span>
-          </div>
+        <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
+          <button onClick={() => router.push('/')} className="hover:underline" style={{ color: '#0D2E5E' }}>Home</button>
+          <ChevronRight size={12} />
+          <button className="hover:underline" style={{ color: '#0D2E5E' }}>{product.category?.title || 'Products'}</button>
+          <ChevronRight size={12} />
+          <span style={{ color: '#64748B' }}>{product.title}</span>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-12">
@@ -244,14 +244,14 @@ export default function ProductDetail() {
               <div className="flex gap-3">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+                  className="flex-1 py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer"
                   style={{ backgroundColor: addedToCart ? '#10B981' : '#0D2E5E', color: 'white' }}
                 >
                   {addedToCart ? <><CheckCircle2 size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
                 </button>
                 <button
                   onClick={() => setInWishlist(!inWishlist)}
-                  className="p-3.5 rounded-xl border-2 flex items-center justify-center transition-all"
+                  className="p-3.5 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer"
                   style={{
                     borderColor: inWishlist ? '#EF4444' : '#E2E8F0',
                     backgroundColor: inWishlist ? '#FEF2F2' : 'white',
