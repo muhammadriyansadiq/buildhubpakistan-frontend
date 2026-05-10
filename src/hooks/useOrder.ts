@@ -96,10 +96,24 @@ export const useUploadOrderImage = () => {
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ paymentMethod, addressId }: { paymentMethod: string; addressId: number }) => {
+    mutationFn: async (payload: {
+      paymentMethod: string;
+      shippingAddress: string;
+      billingAddress: string;
+      quotationId?: string | number;
+      receipt?: File | null;
+    }) => {
       const formData = new FormData();
-      formData.append('paymentMethod', paymentMethod);
-      formData.append('addressId', addressId.toString());
+      formData.append('paymentMethod', payload.paymentMethod);
+      formData.append('shippingAddress', payload.shippingAddress);
+      formData.append('billingAddress', payload.billingAddress);
+      
+      if (payload.quotationId) {
+        formData.append('quotationId', payload.quotationId.toString());
+      }
+      if (payload.receipt) {
+        formData.append('receipt', payload.receipt);
+      }
       
       const { data } = await apiClient.post('/orders', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -109,6 +123,7 @@ export const useCreateOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
   });
 };
