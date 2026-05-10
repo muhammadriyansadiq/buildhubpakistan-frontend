@@ -1,89 +1,97 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, CreditCard, CheckCircle2, Package, ShoppingBag,
-  User, Phone, Mail, Home, Building, Map, Wallet, Smartphone, Banknote, Check
+  User, Phone, Mail, Home, Building, Map, Wallet, Smartphone, Banknote, Check, Loader2
 } from 'lucide-react';
-
-const orderItems = [
-  {
-    id: 1,
-    name: 'OPC Cement 50kg',
-    brand: 'Bestway',
-    price: 1200,
-    quantity: 50,
-    img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=80&h=80&fit=crop'
-  },
-  {
-    id: 2,
-    name: 'TMT Steel Bar 10mm',
-    brand: 'Ittefaq',
-    price: 8500,
-    quantity: 20,
-    img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=80&h=80&fit=crop'
-  },
-  {
-    id: 3,
-    name: 'Floor Tiles 60×60cm',
-    brand: 'Master Tiles',
-    price: 2200,
-    quantity: 100,
-    img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=80&h=80&fit=crop'
-  },
-];
-
-const savedAddresses = [
-  {
-    id: 1,
-    label: 'Home',
-    name: 'Ali Khan',
-    phone: '+92 300 1234567',
-    address: '123 Model Town, Block C',
-    city: 'Lahore',
-    province: 'Punjab',
-    postalCode: '54000',
-    isDefault: true
-  },
-  {
-    id: 2,
-    label: 'Office',
-    name: 'Ali Khan',
-    phone: '+92 300 1234567',
-    address: '45 DHA Phase 5, Commercial Area',
-    city: 'Lahore',
-    province: 'Punjab',
-    postalCode: '54792',
-    isDefault: false
-  },
-];
+import apiClient from '@/api/api-client';
+import { useCart } from '@/hooks/useCart';
+import { useCreateOrder } from '@/hooks/useOrder';
+import { toast } from 'sonner';
 
 export default function Checkout() {
   const router = useRouter();
   const [step, setStep] = useState<'address' | 'payment' | 'review' | 'success'>('address');
-  const [selectedAddress, setSelectedAddress] = useState(savedAddresses[0]);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank' | 'card' | 'jazzcash' | 'easypaisa'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash On Delivery' | 'Bank Transfer' | 'Credit/Debit Card' | 'JazzCash' | 'Easypaisa'>('Cash On Delivery');
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [placedOrderId, setPlacedOrderId] = useState<string>('');
+
+  const { data: cartItems, isLoading: cartLoading } = useCart();
+  const createOrderMutation = useCreateOrder();
 
   const [newAddress, setNewAddress] = useState({
-    name: '',
+    fullName: '',
     phone: '',
     email: '',
-    address: '',
+    streetAddress: '',
     city: '',
     province: 'Punjab',
-    postalCode: ''
+    postalCode: '',
+    label: 'Home'
   });
 
-  const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const fetchAddresses = async () => {
+    try {
+      setLoadingAddresses(true);
+      const response = await apiClient.get('/addresses');
+      const data = response.data.data;
+      setAddresses(data);
+      if (data.length > 0 && !selectedAddress) {
+        setSelectedAddress(data[0]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch addresses:', error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const subtotal = cartItems?.reduce((sum, item) => sum + Number(item.totalPrice), 0) || 0;
   const shipping = 0;
   const tax = 0;
   const total = subtotal + shipping + tax;
 
-  const handlePlaceOrder = () => {
-    setStep('success');
-    window.scrollTo(0, 0);
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      return;
+    }
+
+    try {
+      const response = await createOrderMutation.mutateAsync({
+        paymentMethod: paymentMethod,
+        addressId: selectedAddress.id
+      });
+      
+      // The response structure might vary, but user provided a response example:
+      // "transactionId": "TXN-..."
+      setPlacedOrderId(response.data.transactionId || `#ORD-${Math.floor(Math.random() * 10000)}`);
+      setStep('success');
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('Order placement failed:', error);
+      // toast is already handled by useMutation or apiClient if configured
+    }
+  };
+
+  const handleSaveNewAddress = async () => {
+    try {
+      const response = await apiClient.post('/addresses', newAddress);
+      toast.success('Address added successfully');
+      setShowNewAddress(false);
+      fetchAddresses();
+    } catch (error) {
+      console.error('Failed to add address:', error);
+    }
   };
 
   const steps = [
@@ -105,7 +113,7 @@ export default function Checkout() {
               Your order has been confirmed
             </p>
             <p className="mb-8" style={{ color: '#94A3B8' }}>
-              Order ID: <span className="font-bold" style={{ color: '#3e3e3e' }}>#ORD-2024-{Math.floor(Math.random() * 1000)}</span>
+              Order ID: <span className="font-bold" style={{ color: '#3e3e3e' }}>{placedOrderId}</span>
             </p>
 
             <div className="bg-gray-50 rounded-2xl p-6 mb-8">
@@ -224,39 +232,40 @@ export default function Checkout() {
                 <h2 className="font-bold text-xl mb-4" style={{ color: '#3e3e3e' }}>Select Delivery Address</h2>
 
                 {/* Saved Addresses */}
-                {savedAddresses.map((addr) => (
-                  <div
-                    key={addr.id}
-                    onClick={() => setSelectedAddress(addr)}
-                    className={`bg-white rounded-2xl shadow-sm border-2 p-6 cursor-pointer transition-all ${
-                      selectedAddress.id === addr.id ? 'border-red-500 shadow-md' : ''
-                    }`}
-                    style={{ borderColor: selectedAddress.id === addr.id ? '#ef4136' : '#E2E8F0' }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-bold" style={{ color: '#3e3e3e' }}>{addr.label}</span>
-                          {addr.isDefault && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
-                              Default
-                            </span>
-                          )}
-                        </div>
-                        <p className="font-semibold mb-1" style={{ color: '#3e3e3e' }}>{addr.name}</p>
-                        <p className="text-sm mb-1" style={{ color: '#64748B' }}>{addr.phone}</p>
-                        <p className="text-sm" style={{ color: '#64748B' }}>
-                          {addr.address}, {addr.city}, {addr.province} {addr.postalCode}
-                        </p>
-                      </div>
-                      {selectedAddress.id === addr.id && (
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
-                          <Check size={16} className="text-white" />
-                        </div>
-                      )}
-                    </div>
+                {loadingAddresses ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 size={32} className="animate-spin" style={{ color: '#ef4136' }} />
                   </div>
-                ))}
+                ) : (
+                  addresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      onClick={() => setSelectedAddress(addr)}
+                      className={`bg-white rounded-2xl shadow-sm border-2 p-6 cursor-pointer transition-all ${
+                        selectedAddress?.id === addr.id ? 'border-red-500 shadow-md' : ''
+                      }`}
+                      style={{ borderColor: selectedAddress?.id === addr.id ? '#ef4136' : '#E2E8F0' }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-bold" style={{ color: '#3e3e3e' }}>{addr.label}</span>
+                          </div>
+                          <p className="font-semibold mb-1" style={{ color: '#3e3e3e' }}>{addr.fullName}</p>
+                          <p className="text-sm mb-1" style={{ color: '#64748B' }}>{addr.phone}</p>
+                          <p className="text-sm" style={{ color: '#64748B' }}>
+                            {addr.streetAddress}, {addr.city}, {addr.province} {addr.postalCode}
+                          </p>
+                        </div>
+                        {selectedAddress?.id === addr.id && (
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
+                            <Check size={16} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
 
                 {/* Add New Address */}
                 {!showNewAddress ? (
@@ -277,8 +286,8 @@ export default function Checkout() {
                         </label>
                         <input
                           type="text"
-                          value={newAddress.name}
-                          onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
+                          value={newAddress.fullName}
+                          onChange={(e) => setNewAddress({ ...newAddress, fullName: e.target.value })}
                           className="w-full px-4 py-3 border rounded-xl outline-none"
                           style={{ borderColor: '#E2E8F0' }}
                           placeholder="Enter your name"
@@ -316,8 +325,8 @@ export default function Checkout() {
                         </label>
                         <input
                           type="text"
-                          value={newAddress.address}
-                          onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
+                          value={newAddress.streetAddress}
+                          onChange={(e) => setNewAddress({ ...newAddress, streetAddress: e.target.value })}
                           className="w-full px-4 py-3 border rounded-xl outline-none"
                           style={{ borderColor: '#E2E8F0' }}
                           placeholder="House no, Building, Street"
@@ -369,6 +378,7 @@ export default function Checkout() {
                     </div>
                     <div className="flex gap-3 mt-4">
                       <button
+                        onClick={handleSaveNewAddress}
                         className="flex-1 py-3 rounded-xl font-semibold text-white"
                         style={{ backgroundColor: '#ef4136' }}
                       >
@@ -402,11 +412,11 @@ export default function Checkout() {
 
                 {/* Payment Options */}
                 {[
-                  { id: 'cod', label: 'Cash on Delivery', icon: Banknote, desc: 'Pay when you receive' },
-                  { id: 'bank', label: 'Bank Transfer', icon: Wallet, desc: 'Direct bank transfer' },
-                  { id: 'card', label: 'Credit/Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, etc.' },
-                  { id: 'jazzcash', label: 'JazzCash', icon: Smartphone, desc: 'Mobile wallet' },
-                  { id: 'easypaisa', label: 'Easypaisa', icon: Smartphone, desc: 'Mobile wallet' },
+                  { id: 'Cash On Delivery', label: 'Cash on Delivery', icon: Banknote, desc: 'Pay when you receive' },
+                  { id: 'Bank Transfer', label: 'Bank Transfer', icon: Wallet, desc: 'Direct bank transfer' },
+                  { id: 'Credit/Debit Card', label: 'Credit/Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, etc.' },
+                  { id: 'JazzCash', label: 'JazzCash', icon: Smartphone, desc: 'Mobile wallet' },
+                  { id: 'Easypaisa', label: 'Easypaisa', icon: Smartphone, desc: 'Mobile wallet' },
                 ].map((method) => {
                   const MethodIcon = method.icon;
                   return (
@@ -480,10 +490,10 @@ export default function Checkout() {
                   <div className="flex items-start gap-3">
                     <MapPin size={20} style={{ color: '#64748B' }} />
                     <div>
-                      <p className="font-semibold mb-1" style={{ color: '#3e3e3e' }}>{selectedAddress.name}</p>
-                      <p className="text-sm" style={{ color: '#64748B' }}>{selectedAddress.phone}</p>
+                      <p className="font-semibold mb-1" style={{ color: '#3e3e3e' }}>{selectedAddress?.fullName}</p>
+                      <p className="text-sm" style={{ color: '#64748B' }}>{selectedAddress?.phone}</p>
                       <p className="text-sm" style={{ color: '#64748B' }}>
-                        {selectedAddress.address}, {selectedAddress.city}, {selectedAddress.province} {selectedAddress.postalCode}
+                        {selectedAddress?.streetAddress}, {selectedAddress?.city}, {selectedAddress?.province} {selectedAddress?.postalCode}
                       </p>
                     </div>
                   </div>
@@ -504,11 +514,7 @@ export default function Checkout() {
                   <div className="flex items-center gap-3">
                     <Wallet size={20} style={{ color: '#64748B' }} />
                     <p className="font-semibold" style={{ color: '#3e3e3e' }}>
-                      {paymentMethod === 'cod' && 'Cash on Delivery'}
-                      {paymentMethod === 'bank' && 'Bank Transfer'}
-                      {paymentMethod === 'card' && 'Credit/Debit Card'}
-                      {paymentMethod === 'jazzcash' && 'JazzCash'}
-                      {paymentMethod === 'easypaisa' && 'Easypaisa'}
+                      {paymentMethod}
                     </p>
                   </div>
                 </div>
@@ -517,14 +523,22 @@ export default function Checkout() {
                 <div className="bg-white rounded-2xl shadow-sm border p-6" style={{ borderColor: '#E2E8F0' }}>
                   <h3 className="font-bold mb-4" style={{ color: '#3e3e3e' }}>Order Items</h3>
                   <div className="space-y-3">
-                    {orderItems.map((item) => (
+                    {cartLoading ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 size={24} className="animate-spin" style={{ color: '#ef4136' }} />
+                      </div>
+                    ) : cartItems?.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 pb-3 border-b last:border-0" style={{ borderColor: '#E2E8F0' }}>
-                        <img src={item.img} alt={item.name} className="w-16 h-16 rounded-lg object-cover" />
+                        <img 
+                          src={item.product.images && item.product.images.length > 0 ? `${apiClient.defaults.baseURL?.replace('/api', '')}/${item.product.images[0]}` : 'https://placehold.co/100x100?text=No+Image'} 
+                          alt={item.product.title} 
+                          className="w-16 h-16 rounded-lg object-cover" 
+                        />
                         <div className="flex-1">
-                          <p className="font-semibold text-sm mb-1" style={{ color: '#3e3e3e' }}>{item.name}</p>
-                          <p className="text-xs" style={{ color: '#94A3B8' }}>{item.brand} • Qty: {item.quantity}</p>
+                          <p className="font-semibold text-sm mb-1" style={{ color: '#3e3e3e' }}>{item.product.title}</p>
+                          <p className="text-xs" style={{ color: '#94A3B8' }}>Qty: {item.quantity}</p>
                         </div>
-                        <p className="font-bold" style={{ color: '#3e3e3e' }}>Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                        <p className="font-bold" style={{ color: '#3e3e3e' }}>Rs. {Number(item.totalPrice).toLocaleString()}</p>
                       </div>
                     ))}
                   </div>
@@ -540,10 +554,12 @@ export default function Checkout() {
                   </button>
                   <button
                     onClick={handlePlaceOrder}
+                    disabled={createOrderMutation.isPending}
                     className="flex-1 py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2"
                     style={{ backgroundColor: '#ef4136' }}
                   >
-                    <CheckCircle2 size={20} /> Place Order
+                    {createOrderMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />}
+                    Place Order
                   </button>
                 </div>
               </div>
@@ -557,10 +573,10 @@ export default function Checkout() {
 
               {/* Items Preview */}
               <div className="space-y-2 mb-4 pb-4 border-b" style={{ borderColor: '#E2E8F0' }}>
-                {orderItems.map((item) => (
+                {cartItems?.map((item) => (
                   <div key={item.id} className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#64748B' }}>{item.name} × {item.quantity}</span>
-                    <span style={{ color: '#3e3e3e' }}>Rs. {(item.price * item.quantity).toLocaleString()}</span>
+                    <span style={{ color: '#64748B' }} className="truncate max-w-[150px]">{item.product.title} × {item.quantity}</span>
+                    <span style={{ color: '#3e3e3e' }}>Rs. {Number(item.totalPrice).toLocaleString()}</span>
                   </div>
                 ))}
               </div>

@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronRight, ChevronLeft, Star, ShoppingCart, Heart, Zap,
-  Wrench, CheckCircle2, ArrowRight, Flame, Clock, Truck, Shield
+  Wrench, CheckCircle2, ArrowRight, Flame, Clock, Truck, Shield, RefreshCw
 } from 'lucide-react';
+import { useProducts } from '@/hooks/useProduct';
 
 const banners = [
   {
@@ -96,20 +97,7 @@ const categories = [
   },
 ];
 
-const featuredProducts = [
-  { id: 1, name: 'OPC Cement 50kg', brand: 'Bestway', price: 1200, originalPrice: 1400, rating: 4.5, reviews: 234, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Best Seller', category: 'Cement', vendor: 'Ahmed Materials' },
-  { id: 2, name: 'TMT Steel Bar 10mm', brand: 'Ittefaq', price: 8500, originalPrice: 9200, rating: 4.3, reviews: 89, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=300&h=280&fit=crop', badge: 'Hot Deal', category: 'Steel', vendor: 'Steel Mart PK' },
-  { id: 3, name: 'Floor Tiles 60×60cm', brand: 'Master Tiles', price: 2200, originalPrice: 2600, rating: 4.7, reviews: 312, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=300&h=280&fit=crop', badge: 'Premium', category: 'Tiles', vendor: 'Tile World' },
-  { id: 4, name: 'Weathershield Paint 20L', brand: 'ICI Dulux', price: 3500, originalPrice: 4000, rating: 4.4, reviews: 178, img: 'https://images.unsplash.com/photo-1698216543278-c382147e9fbf?w=300&h=280&fit=crop', badge: 'Trending', category: 'Paints', vendor: 'Paint Palace' },
-  { id: 5, name: 'Power Drill 800W', brand: 'Bosch', price: 12500, originalPrice: 14000, rating: 4.6, reviews: 145, img: 'https://images.unsplash.com/photo-1770763233593-74dfd0da7bf0?w=300&h=280&fit=crop', badge: 'New', category: 'Tools', vendor: 'Tool House' },
-  { id: 6, name: 'UPVC Pipe 4 inch', brand: 'Prince', price: 450, originalPrice: 520, rating: 4.2, reviews: 67, img: 'https://images.unsplash.com/photo-1556995378-e0a5c979ec57?w=300&h=280&fit=crop', badge: 'Value', category: 'Plumbing', vendor: 'Plumb Pro' },
-  { id: 7, name: 'PPC Cement 50kg', brand: 'Lucky', price: 1150, originalPrice: 1300, rating: 4.4, reviews: 198, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Popular', category: 'Cement', vendor: 'Build Mart' },
-  { id: 8, name: 'Angle Iron 40x40mm', brand: 'Ittefaq', price: 6200, originalPrice: 6800, rating: 4.1, reviews: 76, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=300&h=280&fit=crop', badge: 'Sale', category: 'Steel', vendor: 'Steel Mart PK' },
-  { id: 9, name: 'Wall Tiles 30×60cm', brand: 'Shabbir Tiles', price: 1800, originalPrice: 2100, rating: 4.6, reviews: 234, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=300&h=280&fit=crop', badge: 'New', category: 'Tiles', vendor: 'Tile Palace' },
-  { id: 10, name: 'Emulsion Paint 18L', brand: 'Berger', price: 2800, originalPrice: 3200, rating: 4.3, reviews: 156, img: 'https://images.unsplash.com/photo-1698216543278-c382147e9fbf?w=300&h=280&fit=crop', badge: 'Featured', category: 'Paints', vendor: 'Paint Hub' },
-  { id: 11, name: 'Hammer Drill Kit', brand: 'Makita', price: 15000, originalPrice: 17500, rating: 4.7, reviews: 189, img: 'https://images.unsplash.com/photo-1770763233593-74dfd0da7bf0?w=300&h=280&fit=crop', badge: 'Premium', category: 'Tools', vendor: 'Tool Mart' },
-  { id: 12, name: 'PVC Fittings Set', brand: 'Prince', price: 850, originalPrice: 1000, rating: 4.0, reviews: 92, img: 'https://images.unsplash.com/photo-1556995378-e0a5c979ec57?w=300&h=280&fit=crop', badge: 'Bundle', category: 'Plumbing', vendor: 'Plumb Solutions' },
-];
+// Mock services and brands remain as fallback or static info
 
 const services = [
   { id: 1, name: 'Structural Engineering', provider: 'Eng. Ahmad Raza', rating: 4.9, price: 'From Rs. 15,000', location: 'Lahore', img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=200&h=150&fit=crop', badge: 'Top Rated', priceMin: 15000 },
@@ -137,6 +125,8 @@ export default function BuyerHome() {
   const router = useRouter();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const { data: productsData, isLoading: productsLoading } = useProducts();
+  const products = Array.isArray(productsData) ? productsData : [];
 
   const toggleWishlist = (id: number) => {
     setWishlist((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
@@ -290,69 +280,96 @@ export default function BuyerHome() {
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {featuredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group"
-                style={{ borderColor: '#E2E8F0' }}
-              >
-                <div className="relative" style={{ height: '150px' }}>
-                  <img
-                    src={product.img}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    onClick={() => router.push(`/product/${product.id}`)}
-                  />
-                  {/* Badge */}
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
-                    {product.badge}
-                  </span>
-                  {/* Discount */}
-                  {product.originalPrice && (
-                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
-                      -{discount(product.originalPrice, product.price)}%
-                    </span>
-                  )}
-                  {/* Wishlist */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
-                    className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition-transform"
-                  >
-                    <Heart
-                      size={14}
-                      style={{
-                        fill: wishlist.includes(product.id) ? '#EF4444' : 'none',
-                        color: wishlist.includes(product.id) ? '#EF4444' : '#64748B',
-                      }}
-                    />
-                  </button>
-                </div>
-                <div className="p-3" onClick={() => router.push(`/product/${product.id}`)}>
-                  <p className="text-xs mb-0.5" style={{ color: '#94A3B8' }}>{product.brand}</p>
-                  <p className="text-xs font-semibold leading-tight mb-1.5" style={{ color: '#1E293B' }}>{product.name}</p>
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star size={11} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
-                    <span style={{ color: '#64748B', fontSize: '11px' }}>{product.rating}</span>
-                    <span style={{ color: '#CBD5E1', fontSize: '11px' }}>({product.reviews})</span>
+            {productsLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-sm border p-4 animate-pulse" style={{ borderColor: '#E2E8F0', height: '280px' }}>
+                  <div className="w-full h-32 bg-gray-200 rounded-xl mb-3" />
+                  <div className="h-3 bg-gray-200 rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-full mb-4" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-5 bg-gray-200 rounded w-1/3" />
+                    <div className="w-8 h-8 bg-gray-200 rounded-xl" />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '13px' }}>Rs. {product.price.toLocaleString()}</span>
-                      <div style={{ color: '#94A3B8', fontSize: '11px', textDecoration: 'line-through' }}>
-                        Rs. {product.originalPrice.toLocaleString()}
+                </div>
+              ))
+            ) : products.length > 0 ? (
+              products.slice(0, 12).map((product: any) => {
+                const currentPrice = Number(product.price);
+                const originalPrice = product.retail ? Number(product.retail) : currentPrice;
+                const showDiscount = originalPrice > currentPrice;
+
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group"
+                    style={{ borderColor: '#E2E8F0' }}
+                  >
+                    <div className="relative" style={{ height: '150px' }}>
+                      <img
+                        src={product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/300x280?text=No+Image'}
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                        onClick={() => router.push(`/product/${product.id}`)}
+                      />
+                      {/* Badge */}
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
+                        {product.category?.title || 'Featured'}
+                      </span>
+                      {/* Discount */}
+                      {showDiscount && (
+                        <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
+                          -{discount(originalPrice, currentPrice)}%
+                        </span>
+                      )}
+                      {/* Wishlist */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
+                        className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition-transform"
+                      >
+                        <Heart
+                          size={14}
+                          style={{
+                            fill: wishlist.includes(product.id) ? '#EF4444' : 'none',
+                            color: wishlist.includes(product.id) ? '#EF4444' : '#64748B',
+                          }}
+                        />
+                      </button>
+                    </div>
+                    <div className="p-3" onClick={() => router.push(`/product/${product.id}`)}>
+                      <p className="text-xs mb-0.5" style={{ color: '#94A3B8' }}>{product.brand || 'No Brand'}</p>
+                      <p className="text-xs font-semibold leading-tight mb-1.5 h-8 line-clamp-2" style={{ color: '#1E293B' }}>{product.title}</p>
+                      <div className="flex items-center gap-1 mb-2">
+                        <Star size={11} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
+                        <span style={{ color: '#64748B', fontSize: '11px' }}>4.5</span>
+                        <span style={{ color: '#CBD5E1', fontSize: '11px' }}>(120)</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '13px' }}>Rs. {currentPrice.toLocaleString()}</span>
+                          {showDiscount && (
+                            <div style={{ color: '#94A3B8', fontSize: '11px', textDecoration: 'line-through' }}>
+                              Rs. {originalPrice.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: '#ef4136' }}
+                        >
+                          <ShoppingCart size={14} />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: '#ef4136' }}
-                    >
-                      <ShoppingCart size={14} />
-                    </button>
                   </div>
-                </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-12 text-center">
+                <RefreshCw size={48} className="mx-auto mb-4 animate-spin" style={{ color: '#CBD5E1' }} />
+                <p className="text-lg font-semibold" style={{ color: '#64748B' }}>No products found</p>
               </div>
-            ))}
+            )}
           </div>
         </section>
 

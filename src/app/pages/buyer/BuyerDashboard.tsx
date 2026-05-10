@@ -7,8 +7,11 @@ import {
   ShoppingBag, FileText, Settings, ChevronRight, TrendingUp,
   Clock, CheckCircle2, XCircle, AlertCircle, Search, Filter,
   Send, Paperclip, Eye, Download, Plus, Trash2, Edit2, Home,
-  Building, Phone, Mail, Map, Camera, Save, X
+  Building, Phone, Mail, Map, Camera, Save, X, Loader2
 } from 'lucide-react';
+import { useEffect } from 'react';
+import apiClient from '@/api/api-client';
+import { toast } from 'sonner';
 
 const menuItems = [
   { id: 'overview', label: 'Dashboard', icon: ShoppingBag },
@@ -645,53 +648,94 @@ export default function BuyerDashboard() {
   }
 
   function AddressesSection() {
-    const [addresses, setAddresses] = useState([
-      {
-        id: 1,
-        label: 'Home',
-        name: 'Ali Khan',
-        phone: '+92 300 1234567',
-        address: '123 Model Town, Block C',
-        city: 'Lahore',
-        province: 'Punjab',
-        postalCode: '54000',
-        isDefault: true
-      },
-      {
-        id: 2,
-        label: 'Office',
-        name: 'Ali Khan',
-        phone: '+92 300 1234567',
-        address: '45 DHA Phase 5, Commercial Area',
-        city: 'Lahore',
-        province: 'Punjab',
-        postalCode: '54792',
-        isDefault: false
-      },
-    ]);
+    const [addresses, setAddresses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [showAddNew, setShowAddNew] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [formData, setFormData] = useState({
       label: '',
-      name: '',
+      fullName: '',
+      email: '',
       phone: '',
-      address: '',
+      streetAddress: '',
       city: '',
       province: 'Punjab',
       postalCode: '',
-      isDefault: false
     });
 
-    const handleDelete = (id: number) => {
-      setAddresses(addresses.filter(addr => addr.id !== id));
+    const fetchAddresses = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get('/addresses');
+        setAddresses(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch addresses:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleSetDefault = (id: number) => {
-      setAddresses(addresses.map(addr => ({
-        ...addr,
-        isDefault: addr.id === id
-      })));
+    useEffect(() => {
+      fetchAddresses();
+    }, []);
+
+    const handleDelete = async (id: number) => {
+      if (!confirm('Are you sure you want to delete this address?')) return;
+      try {
+        await apiClient.delete(`/addresses/${id}`);
+        setAddresses(addresses.filter(addr => addr.id !== id));
+        toast.success('Address deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete address:', error);
+      }
     };
+
+    const handleSaveAddress = async () => {
+      try {
+        setSaving(true);
+        if (editingId) {
+          await apiClient.put(`/addresses/${editingId}`, formData);
+          toast.success('Address updated successfully');
+        } else {
+          await apiClient.post('/addresses', formData);
+          toast.success('Address added successfully');
+        }
+        setShowAddNew(false);
+        setEditingId(null);
+        setFormData({
+          label: '',
+          fullName: '',
+          email: '',
+          phone: '',
+          streetAddress: '',
+          city: '',
+          province: 'Punjab',
+          postalCode: '',
+        });
+        fetchAddresses();
+      } catch (error) {
+        console.error('Failed to save address:', error);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const handleEdit = (addr: any) => {
+      setEditingId(addr.id);
+      setFormData({
+        label: addr.label || '',
+        fullName: addr.fullName,
+        email: addr.email,
+        phone: addr.phone,
+        streetAddress: addr.streetAddress,
+        city: addr.city,
+        province: addr.province,
+        postalCode: addr.postalCode || '',
+      });
+      setShowAddNew(true);
+    };
+
 
     return (
       <div className="space-y-6">
@@ -712,8 +756,13 @@ export default function BuyerDashboard() {
         {showAddNew && (
           <div className="bg-white rounded-2xl shadow-sm border p-6" style={{ borderColor: '#E2E8F0' }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>Add New Address</h3>
-              <button onClick={() => setShowAddNew(false)}>
+              <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>
+                {editingId ? 'Edit Address' : 'Add New Address'}
+              </h3>
+              <button onClick={() => {
+                setShowAddNew(false);
+                setEditingId(null);
+              }}>
                 <X size={20} style={{ color: '#64748B' }} />
               </button>
             </div>
@@ -738,11 +787,24 @@ export default function BuyerDashboard() {
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   className="w-full px-4 py-3 border rounded-xl outline-none"
                   style={{ borderColor: '#E2E8F0' }}
                   placeholder="Enter your name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#64748B' }}>
+                  <Mail size={14} className="inline mr-1" /> Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-xl outline-none"
+                  style={{ borderColor: '#E2E8F0' }}
+                  placeholder="Enter your email"
                 />
               </div>
               <div>
@@ -764,8 +826,8 @@ export default function BuyerDashboard() {
                 </label>
                 <input
                   type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  value={formData.streetAddress}
+                  onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
                   className="w-full px-4 py-3 border rounded-xl outline-none"
                   style={{ borderColor: '#E2E8F0' }}
                   placeholder="House no, Building, Street"
@@ -816,27 +878,22 @@ export default function BuyerDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-4">
-              <input
-                type="checkbox"
-                checked={formData.isDefault}
-                onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-                className="w-4 h-4 accent-red-500"
-              />
-              <label className="text-sm font-medium" style={{ color: '#64748B' }}>
-                Set as default address
-              </label>
-            </div>
 
             <div className="flex gap-3 mt-6">
               <button
-                className="flex-1 py-3 rounded-xl font-semibold text-white"
+                onClick={handleSaveAddress}
+                disabled={saving}
+                className="flex-1 py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2"
                 style={{ backgroundColor: '#ef4136' }}
               >
-                <Save size={16} className="inline mr-2" /> Save Address
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {editingId ? 'Update Address' : 'Save Address'}
               </button>
               <button
-                onClick={() => setShowAddNew(false)}
+                onClick={() => {
+                  setShowAddNew(false);
+                  setEditingId(null);
+                }}
                 className="flex-1 py-3 rounded-xl font-semibold border-2"
                 style={{ borderColor: '#E2E8F0', color: '#64748B' }}
               >
@@ -846,61 +903,65 @@ export default function BuyerDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {addresses.map((addr) => (
-            <div
-              key={addr.id}
-              className="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition-shadow"
-              style={{ borderColor: '#E2E8F0' }}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEF2F2' }}>
-                    <Home size={20} style={{ color: '#ef4136' }} />
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={32} className="animate-spin" style={{ color: '#ef4136' }} />
+          </div>
+        ) : addresses.length === 0 ? (
+          <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: '#E2E8F0' }}>
+            <MapPin size={48} className="mx-auto mb-4" style={{ color: '#CBD5E1' }} />
+            <p className="text-lg font-semibold mb-2" style={{ color: '#3e3e3e' }}>No addresses found</p>
+            <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>Add your first delivery address to get started</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {addresses.map((addr) => (
+              <div
+                key={addr.id}
+                className="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition-shadow"
+                style={{ borderColor: '#E2E8F0' }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FEF2F2' }}>
+                      <Home size={20} style={{ color: '#ef4136' }} />
+                    </div>
+                    <div>
+                      <span className="font-bold" style={{ color: '#3e3e3e' }}>{addr.label || 'Address'}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-bold" style={{ color: '#3e3e3e' }}>{addr.label}</span>
-                    {addr.isDefault && (
-                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
-                        Default
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEdit(addr)}
+                      className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} style={{ color: '#64748B' }} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(addr.id)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} style={{ color: '#EF4444' }} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <Edit2 size={16} style={{ color: '#64748B' }} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(addr.id)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={16} style={{ color: '#EF4444' }} />
-                  </button>
+                <div className="space-y-2">
+                  <p className="font-semibold" style={{ color: '#3e3e3e' }}>{addr.fullName}</p>
+                  <p className="text-sm flex items-center gap-2" style={{ color: '#64748B' }}>
+                    <Phone size={14} /> {addr.phone}
+                  </p>
+                  <p className="text-sm flex items-center gap-2" style={{ color: '#64748B' }}>
+                    <Mail size={14} /> {addr.email}
+                  </p>
+                  <p className="text-sm flex items-start gap-2" style={{ color: '#64748B' }}>
+                    <MapPin size={14} className="mt-0.5" />
+                    <span>{addr.streetAddress}, {addr.city}, {addr.province} {addr.postalCode}</span>
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="font-semibold" style={{ color: '#3e3e3e' }}>{addr.name}</p>
-                <p className="text-sm flex items-center gap-2" style={{ color: '#64748B' }}>
-                  <Phone size={14} /> {addr.phone}
-                </p>
-                <p className="text-sm flex items-start gap-2" style={{ color: '#64748B' }}>
-                  <MapPin size={14} className="mt-0.5" />
-                  <span>{addr.address}, {addr.city}, {addr.province} {addr.postalCode}</span>
-                </p>
-              </div>
-              {!addr.isDefault && (
-                <button
-                  onClick={() => handleSetDefault(addr.id)}
-                  className="mt-4 w-full py-2 rounded-xl text-sm font-semibold border-2 hover:bg-gray-50 transition-colors"
-                  style={{ borderColor: '#E2E8F0', color: '#64748B' }}
-                >
-                  Set as Default
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

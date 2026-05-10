@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useProduct } from '@/hooks/useProduct';
+import { useAddToCartMutation } from '@/hooks/useCart';
+import { toast } from 'sonner';
 import {
   Star, ShoppingCart, Heart, Share2, ChevronRight, Truck,
   Shield, RefreshCw, Award, Package, CheckCircle2, Minus, Plus,
@@ -9,26 +12,25 @@ import {
   Building2, FileText
 } from 'lucide-react';
 
-const images = [
-  'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=600&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1763926025477-423847028860?w=600&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1770823556202-2eba715a415b?w=600&h=500&fit=crop',
-];
-
-const reviews = [
-  { id: 1, name: 'Muhammad Hassan', rating: 5, date: '2026-04-01', comment: 'Excellent quality cement. Arrived on time and packaging was intact. Highly recommend for construction projects.', helpful: 12 },
-  { id: 2, name: 'Raza Builders', rating: 4, date: '2026-03-28', comment: 'Good product. Delivery was fast. Will order again in bulk.', helpful: 8 },
-  { id: 3, name: 'Ali Construction', rating: 5, date: '2026-03-20', comment: 'Best price in the market. Vendor was very responsive. 5 stars!', helpful: 15 },
-];
-
 const relatedProducts = [
   { id: 2, name: 'Sand (Fine Grade)', price: 850, img: 'https://images.unsplash.com/photo-1763926025477-423847028860?w=200&h=160&fit=crop', rating: 4.2 },
   { id: 3, name: 'Coarse Aggregate', price: 1100, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=200&h=160&fit=crop', rating: 4.4 },
   { id: 4, name: 'Steel Bar 12mm', price: 10200, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=200&h=160&fit=crop', rating: 4.6 },
 ];
+const reviews = [
+  { id: 1, name: 'Muhammad Hassan', rating: 5, date: '2026-04-01', comment: 'Excellent quality. Arrived on time and packaging was intact. Highly recommend.', helpful: 12 },
+  { id: 2, name: 'Raza Builders', rating: 4, date: '2026-03-28', comment: 'Good product. Delivery was fast. Will order again in bulk.', helpful: 8 },
+  { id: 3, name: 'Ali Construction', rating: 5, date: '2026-03-20', comment: 'Best price in the market. Vendor was very responsive. 5 stars!', helpful: 15 },
+];
 
 export default function ProductDetail() {
   const router = useRouter();
+  const params = useParams();
+  const productId = params?.id ? Number(params.id) : 0;
+
+  const { data: product, isLoading, isError } = useProduct(productId);
+  const addToCartMutation = useAddToCartMutation();
+
   const [selectedImg, setSelectedImg] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedTier, setSelectedTier] = useState('retail');
@@ -39,17 +41,56 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState('description');
   const [addedToCart, setAddedToCart] = useState(false);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <RefreshCw size={48} className="animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
+        <Award size={64} className="text-gray-300 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Product Not Found</h2>
+        <p className="text-gray-600 mb-6">The product you are looking for might have been removed or is currently unavailable.</p>
+        <button
+          onClick={() => router.push('/')}
+          className="px-6 py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800 transition-colors"
+        >
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  const images = product.images && product.images.length > 0
+    ? product.images
+    : ['https://placehold.co/600x500?text=No+Image+Available'];
+
   const priceTiers = [
-    { id: 'retail', label: 'Retail', minQty: 1, price: 1200, desc: '1–9 bags' },
-    { id: 'wholesale', label: 'Wholesale', minQty: 10, price: 1100, desc: '10–99 bags' },
-    { id: 'bulk', label: 'Bulk / B2B', minQty: 100, price: 980, desc: '100+ bags' },
+    { id: 'retail', label: 'Retail', price: Number(product.retail || product.price), desc: `Min: 1 ${product.unit}` },
+    { id: 'wholesale', label: 'Wholesale', price: Number(product.wholesale || product.price), desc: `Min: 10 ${product.unit}` },
+    { id: 'bulk', label: 'Bulk / B2B', price: Number(product.bulkb2b || product.price), desc: `Min: 100 ${product.unit}` },
   ];
 
-  const currentPrice = priceTiers.find((t) => t.id === selectedTier)?.price || 1200;
+  const currentPrice = priceTiers.find((t) => t.id === selectedTier)?.price || Number(product.price);
 
   const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+    addToCartMutation.mutate(
+      { productId, quantity },
+      {
+        onSuccess: () => {
+          setAddedToCart(true);
+          toast.success('Product added to cart!');
+          setTimeout(() => setAddedToCart(false), 2000);
+        },
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to add product to cart');
+        },
+      }
+    );
   };
 
   const handleRFQ = (e: React.FormEvent) => {
@@ -62,13 +103,13 @@ export default function ProductDetail() {
     <div style={{ backgroundColor: '#F8FAFC' }}>
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
-          <button onClick={() => router.push('/')} className="hover:underline" style={{ color: '#0D2E5E' }}>Home</button>
-          <ChevronRight size={12} />
-          <button className="hover:underline">Cement & Concrete</button>
-          <ChevronRight size={12} />
-          <span style={{ color: '#64748B' }}>OPC Cement 50kg</span>
-        </div>
+          <div className="flex items-center gap-2 text-xs" style={{ color: '#94A3B8' }}>
+            <button onClick={() => router.push('/')} className="hover:underline" style={{ color: '#0D2E5E' }}>Home</button>
+            <ChevronRight size={12} />
+            <button className="hover:underline" style={{ color: '#0D2E5E' }}>{product.category?.title || 'Products'}</button>
+            <ChevronRight size={12} />
+            <span style={{ color: '#64748B' }}>{product.title}</span>
+          </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-12">
@@ -98,17 +139,20 @@ export default function ProductDetail() {
           {/* Product Info */}
           <div>
             {/* Badges */}
+            {/* Badges */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#F97316' }}>Best Seller</span>
-              <span className="px-2 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>In Stock — 450 bags</span>
+              <span className="px-2 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#F97316' }}>{product.status}</span>
+              <span className="px-2 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
+                {product.stockQuantity > 0 ? `In Stock — ${product.stockQuantity} ${product.unit}` : 'Out of Stock'}
+              </span>
               <span className="px-2 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#DBEAFE', color: '#1E40AF' }}>Verified Vendor</span>
             </div>
 
             <h1 className="text-2xl font-bold mb-1" style={{ color: '#0D2E5E' }}>
-              OPC Cement 50kg Bag
+              {product.title}
             </h1>
             <p className="text-sm mb-3" style={{ color: '#64748B' }}>
-              by <span className="font-semibold" style={{ color: '#F97316' }}>Bestway Cement</span> · SKU: CEM-BW-50KG
+              by <span className="font-semibold" style={{ color: '#F97316' }}>{product.user?.shopName || 'Official Store'}</span> · SKU: {product.sku}
             </p>
 
             {/* Rating */}
@@ -156,8 +200,14 @@ export default function ProductDetail() {
               <span className="font-bold" style={{ fontSize: '32px', color: '#0D2E5E' }}>
                 Rs. {currentPrice.toLocaleString()}
               </span>
-              <span className="text-base" style={{ color: '#94A3B8', textDecoration: 'line-through' }}>Rs. 1,400</span>
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>-14%</span>
+              {Number(product.retail) > currentPrice && (
+                <>
+                  <span className="text-base" style={{ color: '#94A3B8', textDecoration: 'line-through' }}>Rs. {Number(product.retail).toLocaleString()}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
+                    -{Math.round((1 - currentPrice / Number(product.retail)) * 100)}%
+                  </span>
+                </>
+              )}
             </div>
 
             {/* COD Badge */}
@@ -274,19 +324,16 @@ export default function ProductDetail() {
             {activeTab === 'description' && (
               <div className="space-y-3">
                 <p className="text-sm leading-relaxed" style={{ color: '#475569' }}>
-                  Bestway OPC (Ordinary Portland Cement) is one of Pakistan's most trusted cement brands. It meets international standards (ASTM C150) and provides excellent compressive strength for all types of construction including residential, commercial, and industrial projects.
-                </p>
-                <p className="text-sm leading-relaxed" style={{ color: '#475569' }}>
-                  Suitable for: foundations, columns, beams, slabs, plaster, masonry, and all structural applications.
+                  {product.description}
                 </p>
                 <div className="grid grid-cols-2 gap-3 mt-4">
                   {[
-                    { label: 'Brand', value: 'Bestway Cement' },
-                    { label: 'Type', value: 'OPC (53 Grade)' },
-                    { label: 'Weight', value: '50 kg per bag' },
-                    { label: 'Strength', value: '53 N/mm² (28 days)' },
-                    { label: 'Certification', value: 'PSQCA Approved' },
-                    { label: 'Origin', value: 'Pakistan' },
+                    { label: 'Brand', value: product.brand },
+                    { label: 'Model', value: product.modelNumber || 'N/A' },
+                    { label: 'Weight/Unit', value: `${product.unit}` },
+                    { label: 'Material', value: product.material || 'N/A' },
+                    { label: 'Origin', value: product.origin || 'Pakistan' },
+                    { label: 'Warranty', value: product.warranty || 'N/A' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex items-center gap-2 text-sm">
                       <span className="font-semibold" style={{ color: '#334155', width: '120px' }}>{label}:</span>
@@ -302,16 +349,16 @@ export default function ProductDetail() {
                 <table className="w-full">
                   <tbody>
                     {[
-                      ['Product Type', 'OPC Cement Grade 53'],
-                      ['Net Weight', '50 kg ± 0.5 kg'],
-                      ['Bag Type', 'Multi-wall kraft paper'],
-                      ['Setting Time (Initial)', '≥ 45 minutes'],
-                      ['Setting Time (Final)', '≤ 600 minutes'],
-                      ['Compressive Strength 3 Days', '≥ 27 N/mm²'],
-                      ['Compressive Strength 7 Days', '≥ 37 N/mm²'],
-                      ['Compressive Strength 28 Days', '≥ 53 N/mm²'],
-                      ['Soundness (Le-Chatelier)', '≤ 10 mm'],
-                      ['Standard', 'ASTM C150, BS EN 197, PS:232'],
+                      ['Brand', product.brand],
+                      ['SKU', product.sku],
+                      ['Unit', product.unit],
+                      ['Color', product.color || 'N/A'],
+                      ['Size', product.size || 'N/A'],
+                      ['Thickness', product.thickness || 'N/A'],
+                      ['Dimensions', product.dimensions || 'N/A'],
+                      ['Material', product.material || 'N/A'],
+                      ['Warranty', product.warranty || 'N/A'],
+                      ['Shipping Days', product.shippingDays || 'N/A'],
                     ].map(([key, val], idx) => (
                       <tr key={key} style={{ backgroundColor: idx % 2 === 0 ? '#F8FAFC' : 'white' }}>
                         <td className="px-4 py-2.5 text-sm font-semibold" style={{ color: '#334155', width: '45%' }}>{key}</td>
@@ -393,7 +440,7 @@ export default function ProductDetail() {
                 </div>
                 <div>
                   <h3 className="font-bold" style={{ color: '#0D2E5E' }}>Request for Quotation</h3>
-                  <p className="text-xs" style={{ color: '#64748B' }}>OPC Cement 50kg — Bestway</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>{product.title} — {product.brand}</p>
                 </div>
               </div>
               <button onClick={() => setShowRFQ(false)} className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: '#64748B' }}>✕</button>

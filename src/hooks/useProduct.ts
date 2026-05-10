@@ -49,7 +49,7 @@ export const useCategories = (options?: any) => {
   return useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/gigs');
+      const { data } = await apiClient.get('/categories');
       return data.data as Category[];
     },
     ...options,
@@ -58,7 +58,7 @@ export const useCategories = (options?: any) => {
 
 // --- Product Hooks ---
 export const useProducts = (filters?: any, options?: any) => {
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: ['products', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/products', { params: filters });
@@ -69,7 +69,7 @@ export const useProducts = (filters?: any, options?: any) => {
 };
 
 export const useProduct = (id: number) => {
-  return useQuery({
+  return useQuery<Product>({
     queryKey: ['product', id],
     queryFn: async () => {
       const { data } = await apiClient.get(`/products/${id}`);
