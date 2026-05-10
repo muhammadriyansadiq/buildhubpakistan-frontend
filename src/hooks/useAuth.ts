@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import apiClient from '../api/api-client';
 
 export interface RegisterStep1Payload {
@@ -104,5 +104,16 @@ const login = async (payload: LoginPayload) => {
 export const useLoginMutation = () => {
   return useMutation({
     mutationFn: login,
+  });
+};
+
+export const useUser = (id: string | number) => {
+  return useQuery({
+    queryKey: ['user', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/users/${id}`);
+      return data.data;
+    },
+    enabled: !!id,
   });
 };
