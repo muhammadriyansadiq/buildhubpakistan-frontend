@@ -12,6 +12,7 @@ import {
 import { useEffect } from 'react';
 import apiClient from '@/api/api-client';
 import { toast } from 'sonner';
+import BuyerQuotations from '@/app/components/buyer/BuyerQuotations';
 
 const menuItems = [
   { id: 'overview', label: 'Dashboard', icon: ShoppingBag },
@@ -92,7 +93,7 @@ export default function BuyerDashboard() {
       case 'orders':
         return <OrdersSection selectedOrder={selectedOrder} setSelectedOrder={setSelectedOrder} />;
       case 'quotations':
-        return <QuotationsSection selectedRFQ={selectedRFQ} setSelectedRFQ={setSelectedRFQ} newMessage={newMessage} setNewMessage={setNewMessage} />;
+        return <BuyerQuotations selectedRFQ={selectedRFQ} setSelectedRFQ={setSelectedRFQ} newMessage={newMessage} setNewMessage={setNewMessage} />;
       case 'wishlist':
         return <WishlistSection />;
       case 'addresses':
@@ -426,203 +427,6 @@ export default function BuyerDashboard() {
     );
   }
 
-  function QuotationsSection({ selectedRFQ, setSelectedRFQ, newMessage, setNewMessage }: any) {
-    if (selectedRFQ) {
-      const rfq = quotations.find(q => q.id === selectedRFQ);
-      if (!rfq) return null;
-
-      const messages = [
-        { id: 1, sender: 'buyer', text: rfq.description, timestamp: '05 May, 10:30 AM', attachments: [] },
-        ...(rfq.status !== 'pending' ? [
-          { id: 2, sender: 'admin', text: 'Thank you for your inquiry. We can provide the cement at competitive rates.', timestamp: '05 May, 2:15 PM', attachments: [] },
-          { id: 3, sender: 'admin', text: `Based on your requirement, we are offering:\n\nBase Price: Rs. ${rfq.basePrice?.toLocaleString()}\n\nThis includes:\n- 500 bags of OPC Cement 50kg (Bestway)\n- Free delivery within Lahore\n- Quality certification\n- 48-hour delivery guarantee\n\nLet us know if you'd like to proceed!`, timestamp: '05 May, 2:18 PM', attachments: ['quotation-document.pdf'], basePrice: rfq.basePrice, description: 'Complete quotation with terms and conditions' }
-        ] : []),
-        ...(rfq.status === 'accepted' ? [
-          { id: 4, sender: 'buyer', text: 'This looks good. I accept the quotation. Please proceed with the order.', timestamp: '05 May, 4:30 PM', attachments: [] },
-          { id: 5, sender: 'admin', text: 'Perfect! Your order has been confirmed. Order ID: ORD-2024-001. Expected delivery: 07 May 2024.', timestamp: '05 May, 4:45 PM', attachments: [] }
-        ] : [])
-      ];
-
-      return (
-        <div className="space-y-6">
-          <button
-            onClick={() => setSelectedRFQ(null)}
-            className="flex items-center gap-2 text-sm font-medium hover:gap-3 transition-all"
-            style={{ color: '#ef4136' }}
-          >
-            ← Back to Quotations
-          </button>
-
-          <div className="bg-white rounded-2xl shadow-sm border" style={{ borderColor: '#E2E8F0' }}>
-            {/* Header */}
-            <div className="p-6 border-b" style={{ borderColor: '#E2E8F0' }}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h2 className="font-bold text-2xl mb-2" style={{ color: '#3e3e3e' }}>{rfq.title}</h2>
-                  <div className="flex items-center gap-4 text-sm" style={{ color: '#64748B' }}>
-                    <span>RFQ ID: {rfq.id}</span>
-                    <span>•</span>
-                    <span>Vendor: {rfq.vendor}</span>
-                    <span>•</span>
-                    <span>Created: {new Date(rfq.date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                {(() => {
-                  const status = statusConfig[rfq.status];
-                  const StatusIcon = status.icon;
-                  return (
-                    <span className="px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                      <StatusIcon size={16} /> {status.label}
-                    </span>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Conversation Thread */}
-            <div className="p-6" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-              <div className="space-y-4">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.sender === 'buyer' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-2xl ${msg.sender === 'buyer' ? 'ml-12' : 'mr-12'}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold" style={{ color: msg.sender === 'buyer' ? '#ef4136' : '#2563EB' }}>
-                          {msg.sender === 'buyer' ? 'You' : 'Admin / Vendor'}
-                        </span>
-                        <span className="text-xs" style={{ color: '#94A3B8' }}>{msg.timestamp}</span>
-                      </div>
-                      <div
-                        className="p-4 rounded-2xl"
-                        style={{
-                          backgroundColor: msg.sender === 'buyer' ? '#FEF2F2' : '#F0F9FF',
-                          borderLeft: `3px solid ${msg.sender === 'buyer' ? '#ef4136' : '#2563EB'}`
-                        }}
-                      >
-                        <p className="text-sm whitespace-pre-line" style={{ color: '#3e3e3e' }}>{msg.text}</p>
-
-                        {/* Base Price and Description Fields */}
-                        {msg.basePrice && msg.description && (
-                          <div className="mt-4 pt-4 border-t space-y-3" style={{ borderColor: msg.sender === 'buyer' ? '#FECACA' : '#BFDBFE' }}>
-                            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'white' }}>
-                              <span className="text-sm font-semibold" style={{ color: '#64748B' }}>Base Price:</span>
-                              <span className="text-lg font-bold" style={{ color: '#16A34A' }}>
-                                Rs. {msg.basePrice.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="p-3 rounded-lg" style={{ backgroundColor: 'white' }}>
-                              <p className="text-xs font-semibold mb-1" style={{ color: '#64748B' }}>Description:</p>
-                              <p className="text-sm" style={{ color: '#3e3e3e' }}>{msg.description}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Attachments */}
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            {msg.attachments.map((attachment, idx) => (
-                              <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-white">
-                                <FileText size={18} style={{ color: '#ef4136' }} />
-                                <span className="text-sm flex-1" style={{ color: '#3e3e3e' }}>{attachment}</span>
-                                <button className="p-1 hover:bg-gray-100 rounded">
-                                  <Download size={16} style={{ color: '#64748B' }} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Message Input */}
-            <div className="p-6 border-t" style={{ borderColor: '#E2E8F0' }}>
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    rows={3}
-                    className="w-full px-4 py-3 border rounded-xl text-sm outline-none resize-none"
-                    style={{ borderColor: '#E2E8F0' }}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button className="p-3 border rounded-xl hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0' }}>
-                    <Paperclip size={20} style={{ color: '#64748B' }} />
-                  </button>
-                  <button className="p-3 rounded-xl text-white" style={{ backgroundColor: '#ef4136' }}>
-                    <Send size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-2xl mb-1" style={{ color: '#3e3e3e' }}>Quotations (RFQ)</h2>
-            <p className="text-sm" style={{ color: '#94A3B8' }}>Manage your quote requests and conversations</p>
-          </div>
-          <button
-            className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2"
-            style={{ backgroundColor: '#ef4136', color: 'white' }}
-            onClick={() => router.push('/buyer/rfq')}
-          >
-            + New Request
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          {quotations.map((rfq) => {
-            const status = statusConfig[rfq.status];
-            const StatusIcon = status.icon;
-            return (
-              <div
-                key={rfq.id}
-                className="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-lg transition-all cursor-pointer"
-                style={{ borderColor: '#E2E8F0' }}
-                onClick={() => setSelectedRFQ(rfq.id)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg" style={{ color: '#3e3e3e' }}>{rfq.title}</h3>
-                      <span className="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1" style={{ color: status.color, backgroundColor: status.bgColor }}>
-                        <StatusIcon size={14} /> {status.label}
-                      </span>
-                    </div>
-                    <p className="text-sm mb-2" style={{ color: '#64748B' }}>
-                      {rfq.vendor} • {rfq.messages} messages
-                    </p>
-                    <p className="text-sm mb-3" style={{ color: '#64748B' }}>{rfq.description}</p>
-                    {rfq.basePrice && (
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: '#DCFCE7' }}>
-                        <span className="text-xs font-semibold" style={{ color: '#166534' }}>Quoted Price:</span>
-                        <span className="text-sm font-bold" style={{ color: '#16A34A' }}>Rs. {rfq.basePrice.toLocaleString()}</span>
-                      </div>
-                    )}
-                    <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>Last updated: {rfq.lastUpdate}</p>
-                  </div>
-                  <button className="text-sm font-medium flex items-center gap-1 px-4 py-2 rounded-xl" style={{ backgroundColor: '#f8f9fa', color: '#ef4136' }}>
-                    View Chat <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
 
   function WishlistSection() {
     return (
@@ -1418,9 +1222,8 @@ export default function BuyerDashboard() {
                     <button
                       key={item.id}
                       onClick={() => router.push(`/buyer/dashboard/${item.id}`)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                        isActive ? 'shadow-sm' : 'hover:bg-gray-50'
-                      }`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive ? 'shadow-sm' : 'hover:bg-gray-50'
+                        }`}
                       style={{
                         backgroundColor: isActive ? '#FEF2F2' : 'transparent',
                         color: isActive ? '#ef4136' : '#64748B'

@@ -9,8 +9,9 @@ import {
   Star, ShoppingCart, Heart, Share2, ChevronRight, Truck,
   Shield, RefreshCw, Award, Package, CheckCircle2, Minus, Plus,
   MessageSquare, Tag, Zap, MapPin, Clock, ChevronDown, ChevronUp,
-  Building2, FileText
+  Building2, FileText, Loader2
 } from 'lucide-react';
+import { useCreateQuotationMutation } from '@/hooks/useQuotation';
 
 const relatedProducts = [
   { id: 2, name: 'Sand (Fine Grade)', price: 850, img: 'https://images.unsplash.com/photo-1763926025477-423847028860?w=200&h=160&fit=crop', rating: 4.2 },
@@ -37,7 +38,9 @@ export default function ProductDetail() {
   const [inWishlist, setInWishlist] = useState(false);
   const [showRFQ, setShowRFQ] = useState(false);
   const [rfqQty, setRfqQty] = useState('');
+  const [rfqLocation, setRfqLocation] = useState('');
   const [rfqNote, setRfqNote] = useState('');
+  const createRFQMutation = useCreateQuotationMutation();
   const [activeTab, setActiveTab] = useState('description');
   const [addedToCart, setAddedToCart] = useState(false);
 
@@ -93,10 +96,28 @@ export default function ProductDetail() {
     );
   };
 
-  const handleRFQ = (e: React.FormEvent) => {
+  const handleRFQ = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowRFQ(false);
-    router.push('/buyer/rfq');
+    if (!rfqQty || !rfqLocation) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await createRFQMutation.mutateAsync({
+        productId: productId,
+        requiredQuantity: Number(rfqQty),
+        deliveryLocation: rfqLocation,
+        additionalRequirement: rfqNote,
+      });
+      toast.success('Quotation request sent successfully!');
+      setShowRFQ(false);
+      setRfqQty('');
+      setRfqLocation('');
+      setRfqNote('');
+    } catch (error) {
+      // Error is handled by apiClient toast
+    }
   };
 
   return (
@@ -273,7 +294,7 @@ export default function ProductDetail() {
               {/* RFQ Button */}
               <button
                 onClick={() => setShowRFQ(true)}
-                className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border-2 hover:shadow-md transition-all"
+                className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border-2 hover:shadow-md transition-all cursor-pointer"
                 style={{ borderColor: '#F97316', color: '#F97316', backgroundColor: '#FFF7ED' }}
               >
                 <FileText size={18} />
@@ -451,15 +472,39 @@ export default function ProductDetail() {
                 <input type="number" value={rfqQty} onChange={(e) => setRfqQty(e.target.value)} placeholder="e.g. 500 bags" required className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Delivery Location</label>
-                <input type="text" placeholder="City, Pakistan" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Delivery Location *</label>
+                <input
+                  type="text"
+                  value={rfqLocation}
+                  onChange={(e) => setRfqLocation(e.target.value)}
+                  placeholder="e.g. Muskan Chowrangi, Karachi"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                  style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Additional Requirements</label>
-                <textarea value={rfqNote} onChange={(e) => setRfqNote(e.target.value)} placeholder="Any specific requirements, delivery timeline, or pricing expectations..." rows={3} className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Additional Requirements (Optional)</label>
+                <textarea
+                  value={rfqNote}
+                  onChange={(e) => setRfqNote(e.target.value)}
+                  placeholder="Any specific requirements, delivery timeline, or pricing expectations..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none"
+                  style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                />
               </div>
-              <button type="submit" className="w-full py-3.5 rounded-xl text-white font-semibold hover:opacity-90" style={{ backgroundColor: '#F97316' }}>
-                Submit RFQ Request
+              <button
+                type="submit"
+                disabled={createRFQMutation.isPending}
+                className="w-full py-3.5 rounded-xl text-white font-semibold hover:opacity-90 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
+                style={{ backgroundColor: '#F97316' }}
+              >
+                {createRFQMutation.isPending ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  'Submit RFQ Request'
+                )}
               </button>
             </form>
           </div>
