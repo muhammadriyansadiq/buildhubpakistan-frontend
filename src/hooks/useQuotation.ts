@@ -106,10 +106,7 @@ export const useRespondToQuotationMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, price, reply }: { id: number | string; price: number; reply: string }) => {
-      // The user didn't specify the exact endpoint for sending a quote response, 
-      // but usually it's a POST to responses or similar.
-      // Based on common patterns in this project:
-      const { data } = await apiClient.post(`/quotations/respond/${id}`, {
+      const { data } = await apiClient.post(`/quotations/response/${id}`, {
         price,
         reply,
       });
@@ -118,6 +115,18 @@ export const useRespondToQuotationMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['quotation'] });
+    },
+  });
+};
+export const useCreateQuotationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { requiredQuantity: number; deliveryLocation: string; additionalRequirement?: string; productId?: number }) => {
+      const { data } = await apiClient.post('/quotations', payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
   });
 };
