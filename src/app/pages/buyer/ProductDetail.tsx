@@ -8,8 +8,8 @@ import { toast } from 'sonner';
 import {
   Star, ShoppingCart, Heart, Share2, ChevronRight, Truck,
   Shield, RefreshCw, Award, Package, CheckCircle2, Minus, Plus,
-  MessageSquare, Tag, Zap, MapPin, Clock, ChevronDown, ChevronUp,
-  Building2, FileText, Loader2
+  Tag, Zap, MapPin, Clock, ChevronDown, ChevronUp,
+  Building2, FileText, Loader2, Mail, Calendar
 } from 'lucide-react';
 import { useCreateQuotationMutation } from '@/hooks/useQuotation';
 
@@ -300,6 +300,66 @@ export default function ProductDetail() {
                 <FileText size={18} />
                 Initiate Request for Quotation (RFQ) — Bulk / B2B
               </button>
+            </div>
+
+            {/* Seller Information Card */}
+            <div className="bg-white p-6 rounded-2xl border shadow-sm mb-5" style={{ borderColor: '#E2E8F0' }}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-[#0D2E5E]">Seller Information</h3>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-100">
+                  <CheckCircle2 size={12} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Verified Vendor</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg" style={{ backgroundColor: '#0D2E5E' }}>
+                  {product.user?.shopName?.charAt(0) || product.user?.fullName?.charAt(0) || 'B'}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-lg text-[#0D2E5E]">{product.user?.shopName || 'Official Store'}</h4>
+                  <p className="text-xs font-semibold text-gray-400 mb-2">by {product.user?.fullName}</p>
+                  <div className="flex flex-wrap items-center gap-y-1 gap-x-4">
+                    <div className="flex items-center gap-1">
+                      <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                      <span className="text-xs font-bold text-[#1E293B]">4.9 Rating</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-500">
+                      <MapPin size={12} className="text-[#F97316]" />
+                      <span className="text-xs font-medium">{product.origin || 'Pakistan'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-5 pt-5 border-t" style={{ borderColor: '#F1F5F9' }}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <Mail size={16} className="text-gray-400" />
+                    <div>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Email Support</p>
+                      <p className="text-xs font-bold text-[#0D2E5E] truncate max-w-[120px]">{product.user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <Calendar size={16} className="text-gray-400" />
+                    <div>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Member Since</p>
+                      <p className="text-xs font-bold text-[#0D2E5E]">
+                        {product.user?.createdAt ? new Date(product.user.createdAt).getFullYear() : '2024'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push(`/shop/${product.sellerId}`)}
+                    className="w-full py-3.5 rounded-xl text-xs font-bold border-2 border-[#0D2E5E] text-[#0D2E5E] hover:bg-[#0D2E5E] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Building2 size={16} /> Visit Full Shop Profile
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Shipping Info */}

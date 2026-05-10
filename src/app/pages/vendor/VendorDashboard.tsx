@@ -10,7 +10,7 @@ import {
   ChevronDown, Tag, DollarSign, Box, RefreshCw, Download,
   Calendar, MapPin, User, Phone, ChevronUp, FileText, Send,
   Mail, MessageSquare, Store, Camera, Building2, CreditCard,
-  Zap, Award, Shield, ChevronLeft, X, Loader2
+  Zap, Award, Shield, ChevronLeft, X, Loader2, Globe
 } from 'lucide-react';
 import {
   useQuotations,
@@ -40,7 +40,8 @@ import {
 } from '@/hooks/useOrder';
 import {
   useCompleteBusinessStep3Mutation,
-  useCompleteDocumentsStep4Mutation
+  useCompleteDocumentsStep4Mutation,
+  useUser
 } from '@/hooks/useAuth';
 
 const navItems = [
@@ -373,6 +374,11 @@ export default function VendorDashboard() {
   const rfqPerPage = 15;
 
   // Settings / Onboarding state
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'shop' | 'bank'>('profile');
+
+  const { data: currentUserDetails, isLoading: userLoading } = useUser(user?.id || '');
+  const isProfileComplete = currentUserDetails?.isProfileComplete || user?.isProfileComplete;
+
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('store');
   const [accountType, setAccountType] = useState<'retailer' | 'wholesaler'>('retailer');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -554,20 +560,26 @@ export default function VendorDashboard() {
   };
 
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+    const loadingToast = toast.loading(`Updating order status to ${newStatus}...`);
     try {
       await updateStatusMutation.mutateAsync({ id: orderId, status: newStatus });
-      toast.success(`Order marked as ${newStatus}`);
+      toast.success(`Order marked as ${newStatus}`, { id: loadingToast });
+      setIsOrderModalOpen(false);
+      setSelectedOrder(null);
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error("Failed to update status", { id: loadingToast });
     }
   };
 
   const handleUploadProof = async (orderId: number, file: File) => {
+    const loadingToast = toast.loading("Uploading delivery proof...");
     try {
       await uploadImageMutation.mutateAsync({ id: orderId, image: file });
-      toast.success("Delivery proof uploaded successfully");
+      toast.success("Delivery proof uploaded successfully", { id: loadingToast });
+      setIsOrderModalOpen(false);
+      setSelectedOrder(null);
     } catch (error) {
-      toast.error("Failed to upload proof");
+      toast.error("Failed to upload proof", { id: loadingToast });
     }
   };
 
@@ -2160,462 +2172,575 @@ export default function VendorDashboard() {
 
           {/* ─── SETTINGS & ONBOARDING ─── */}
           {activeSection === 'settings' && (
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* Progress Stepper */}
-              <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6" style={{ borderColor: '#E2E8F0' }}>
-                <div className="flex items-center gap-2">
-                  {[
-                    { key: 'store', label: 'Store Setup' },
-                    { key: 'documents', label: 'Documents' },
-                    { key: 'subscription', label: 'Subscription' },
-                    { key: 'payment', label: 'Payment' },
-                  ].map((s, idx) => (
-                    <div key={s.key} className="flex items-center gap-2 flex-1">
-                      <div className="flex flex-col items-center gap-2 flex-1">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                          style={{
-                            backgroundColor: idx <= onboardingStepIdx ? '#0D2E5E' : '#F1F5F9',
-                            color: idx <= onboardingStepIdx ? 'white' : '#94A3B8',
-                            border: idx <= onboardingStepIdx ? 'none' : '2px solid #E2E8F0'
-                          }}
-                        >
-                          {idx < onboardingStepIdx ? <CheckCircle2 size={20} /> : idx + 1}
-                        </div>
-                        <span className="text-xs font-semibold text-center" style={{ color: idx <= onboardingStepIdx ? '#0D2E5E' : '#94A3B8' }}>{s.label}</span>
-                      </div>
-                      {idx < 3 && (
-                        <div className="h-1 flex-1 mx-2 rounded-full" style={{ backgroundColor: idx < onboardingStepIdx ? '#0D2E5E' : '#F1F5F9' }} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ─── STEP 1: Store Setup ─── */}
-              {onboardingStep === 'store' && (
-                <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EFF6FF' }}>
-                      <Store size={20} style={{ color: '#0D2E5E' }} />
-                    </div>
+            <div className="max-w-4xl mx-auto space-y-6">
+              {isProfileComplete ? (
+                <div className="space-y-6">
+                  {/* Settings Header */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
                     <div>
-                      <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Store Setup</h2>
-                      <p className="text-sm" style={{ color: '#64748B' }}>Tell us about your business</p>
+                      <h2 className="text-2xl font-black text-[#0D2E5E]">Settings</h2>
+                      <p className="text-sm text-gray-500">Manage your store profile and account details</p>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full border border-green-100">
+                      <CheckCircle2 size={18} />
+                      <span className="text-sm font-bold uppercase tracking-wider">Verified Vendor</span>
                     </div>
                   </div>
 
-                  <div className="space-y-5">
-                    {/* Shop Name */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Name *</label>
-                      <input
-                        type="text"
-                        value={storeForm.shopName}
-                        onChange={(e) => setStoreForm({ ...storeForm, shopName: e.target.value })}
-                        placeholder="e.g. Ahmed Building Materials"
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                      />
-                    </div>
-
-                    {/* Logo Upload */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Logo</label>
-                      <input
-                        type="file"
-                        id="logo-upload"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setStoreForm({ ...storeForm, logo: file });
-                        }}
-                      />
-                      <div
-                        onClick={() => document.getElementById('logo-upload')?.click()}
-                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                        style={{ borderColor: storeForm.logo ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.logo ? '#F0FDF4' : 'transparent' }}
-                      >
-                        {storeForm.logo ? (
-                          <div className="flex flex-col items-center w-full">
-                            <img
-                              src={URL.createObjectURL(storeForm.logo)}
-                              alt="Logo preview"
-                              className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
-                            />
-                            <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Logo</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
-                            <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload logo</p>
-                            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 200×200px</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Shop Cover Upload */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Cover Image</label>
-                      <input
-                        type="file"
-                        id="cover-upload"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setStoreForm({ ...storeForm, shopCoverImage: file });
-                        }}
-                      />
-                      <div
-                        onClick={() => document.getElementById('cover-upload')?.click()}
-                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                        style={{ borderColor: storeForm.shopCoverImage ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.shopCoverImage ? '#F0FDF4' : 'transparent' }}
-                      >
-                        {storeForm.shopCoverImage ? (
-                          <div className="flex flex-col items-center w-full">
-                            <img
-                              src={URL.createObjectURL(storeForm.shopCoverImage)}
-                              alt="Cover preview"
-                              className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
-                            />
-                            <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Cover Image</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
-                            <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload cover image</p>
-                            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 1200×400px</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Account Type */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>Account Type *</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          { id: 'retailer', label: 'Retailer', icon: User, desc: 'Sells directly to consumers' },
-                          { id: 'wholesaler', label: 'Wholesaler', icon: Building2, desc: 'Sells in bulk' },
-                        ].map((type) => {
-                          const Icon = type.icon;
-                          return (
-                            <button
-                              key={type.id}
-                              onClick={() => setAccountType(type.id as 'retailer' | 'wholesaler')}
-                              className="p-4 rounded-xl border-2 text-left transition-all"
-                              style={{
-                                borderColor: accountType === type.id ? '#0D2E5E' : '#E2E8F0',
-                                backgroundColor: accountType === type.id ? '#EFF6FF' : '#F8FAFC',
-                              }}
-                            >
-                              <Icon size={20} className="mb-2" style={{ color: accountType === type.id ? '#0D2E5E' : '#94A3B8' }} />
-                              <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{type.label}</div>
-                              <div className="text-xs" style={{ color: '#64748B' }}>{type.desc}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* CNIC / NTN */}
-                    <div>
-                      {accountType === 'retailer' ? (
-                        <div>
-                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>CNIC Number *</label>
-                          <input
-                            type="text"
-                            value={storeForm.cnic}
-                            onChange={(e) => setStoreForm({ ...storeForm, cnic: e.target.value })}
-                            placeholder="XXXXX-XXXXXXX-X"
-                            className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>NTN Number *</label>
-                          <input
-                            type="text"
-                            value={storeForm.ntn}
-                            onChange={(e) => setStoreForm({ ...storeForm, ntn: e.target.value })}
-                            placeholder="Enter NTN number"
-                            className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Locations */}
+                  {/* Settings Tabs */}
+                  <div className="flex p-1.5 bg-gray-100 rounded-2xl overflow-x-auto custom-scrollbar">
                     {[
-                      // { key: 'address', label: 'Business Address *', placeholder: 'Street, City, Province' },
-                      { key: 'businessLocation', label: 'Business Location (Google Maps Link)', placeholder: 'https://maps.google.com/...' },
-                      { key: 'warehouseLocation', label: 'Warehouse Location', placeholder: 'Street, City, Province' },
-                      { key: 'returnLocation', label: 'Return Address', placeholder: 'Address for returns & refunds' },
-                    ].map((field) => (
-                      <div key={field.key}>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>{field.label}</label>
-                        <div className="relative">
-                          <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
-                          <input
-                            type="text"
-                            placeholder={field.placeholder}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl border text-sm outline-none"
-                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
-                    <button
-                      onClick={handleOnboardingNext}
-                      disabled={businessStep3Mutation.isPending}
-                      className="px-8 py-3 rounded-xl text-white font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: '#0D2E5E' }}
-                    >
-                      {businessStep3Mutation.isPending ? (
-                        <>Saving... <RefreshCw size={18} className="animate-spin" /></>
-                      ) : (
-                        <>Save & Continue <ChevronRight size={18} /></>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── STEP 2: Documents ─── */}
-              {onboardingStep === 'documents' && (
-                <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EFF6FF' }}>
-                      <FileText size={20} style={{ color: '#0D2E5E' }} />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Bank Details</h2>
-                      <p className="text-sm" style={{ color: '#64748B' }}>Enter your bank account details for receiving payments</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-5">
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Account Title *</label>
-                      <input
-                        type="text"
-                        value={bankForm.accountTitle}
-                        onChange={(e) => setBankForm({ ...bankForm, accountTitle: e.target.value })}
-                        placeholder="e.g. Muhammad Ahmed"
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Bank Account Number *</label>
-                      <input
-                        type="text"
-                        value={bankForm.accountNumber}
-                        onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
-                        placeholder="e.g. 1234567890"
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                        style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Branch Code *</label>
-                        <input
-                          type="text"
-                          value={bankForm.branchCode}
-                          onChange={(e) => setBankForm({ ...bankForm, branchCode: e.target.value })}
-                          placeholder="e.g. 0214"
-                          className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                          style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>IBAN Number *</label>
-                        <input
-                          type="text"
-                          value={bankForm.ibanNumber}
-                          onChange={(e) => setBankForm({ ...bankForm, ibanNumber: e.target.value })}
-                          placeholder="e.g. PK00 ABCD 1234 5678 9012"
-                          className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                          style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 mt-8 pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
-                    <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
-                      <ChevronLeft size={18} /> Back
-                    </button>
-                    <button
-                      onClick={handleOnboardingNext}
-                      disabled={documentsStep4Mutation.isPending}
-                      className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: '#0D2E5E' }}
-                    >
-                      {documentsStep4Mutation.isPending ? (
-                        <>Submitting... <RefreshCw size={18} className="animate-spin" /></>
-                      ) : (
-                        <>Submit Documents <ChevronRight size={18} /></>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── STEP 3: Subscription ─── */}
-              {onboardingStep === 'subscription' && (
-                <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
-                  <div className="text-center mb-8">
-                    <h2 className="font-bold text-2xl" style={{ color: '#0D2E5E' }}>Choose Your Subscription Plan</h2>
-                    <p className="text-sm mt-2" style={{ color: '#64748B' }}>
-                      Select a plan that best fits your business size and needs
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    {subscriptionPlans.map((plan) => (
+                      { id: 'profile', label: 'Profile Info', icon: User },
+                      { id: 'shop', label: 'Shop Details', icon: Store },
+                      { id: 'bank', label: 'Bank Details', icon: CreditCard },
+                    ].map((tab) => (
                       <button
-                        key={plan.id}
-                        onClick={() => setSelectedPlan(plan.id)}
-                        className="rounded-2xl border-2 p-6 text-left transition-all hover:shadow-lg"
-                        style={{
-                          borderColor: selectedPlan === plan.id ? plan.color : '#E2E8F0',
-                          backgroundColor: selectedPlan === plan.id ? plan.bg : 'white',
-                        }}
+                        key={tab.id}
+                        onClick={() => setSettingsTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${settingsTab === tab.id
+                          ? 'bg-white text-[#ef4136] shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
                       >
-                        {/* Badge */}
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: plan.badgeColor }}>
-                            {plan.badge}
-                          </span>
-                          <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center" style={{
-                            borderColor: selectedPlan === plan.id ? plan.color : '#CBD5E1',
-                            backgroundColor: selectedPlan === plan.id ? plan.color : 'transparent',
-                          }}>
-                            {selectedPlan === plan.id && <CheckCircle2 size={14} className="text-white" />}
-                          </div>
-                        </div>
-
-                        <h3 className="font-bold text-xl mb-1" style={{ color: plan.color }}>{plan.name}</h3>
-                        <p className="text-sm mb-4" style={{ color: '#64748B' }}>{plan.description}</p>
-
-                        <div className="flex items-baseline gap-1 mb-5">
-                          <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Rs.</span>
-                          <span className="font-bold" style={{ fontSize: '28px', color: '#0D2E5E' }}>{plan.price}</span>
-                          <span className="text-sm" style={{ color: '#64748B' }}>{plan.period}</span>
-                        </div>
-
-                        <ul className="space-y-2">
-                          {plan.features.map((feat) => (
-                            <li key={feat} className="flex items-center gap-2 text-sm" style={{ color: '#374151' }}>
-                              <CheckCircle2 size={14} style={{ color: plan.color, flexShrink: 0 }} />
-                              {feat}
-                            </li>
-                          ))}
-                        </ul>
+                        <tab.icon size={18} />
+                        {tab.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
-                      <ChevronLeft size={18} /> Back
-                    </button>
-                    <button
-                      onClick={() => {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        router.push('/login');
-                        toast.success("Registration steps completed. Please login to continue.");
-                      }}
-                      className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: '#0D2E5E' }}
-                    >
-                      Proceed to Payment <CreditCard size={18} />
-                    </button>
+                  {/* Tab Content */}
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    {settingsTab === 'profile' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white p-8 rounded-[32px] border shadow-sm space-y-6" style={{ borderColor: '#E2E8F0' }}>
+                          <h3 className="text-lg font-bold text-[#0D2E5E] flex items-center gap-2">
+                            <User size={20} className="text-[#ef4136]" /> Personal Information
+                          </h3>
+                          <div className="space-y-4">
+                            {[
+                              { label: 'Full Name', value: currentUserDetails?.fullName, icon: User },
+                              { label: 'Email Address', value: currentUserDetails?.email, icon: Mail },
+                              { label: 'Phone Number', value: currentUserDetails?.phone, icon: Phone },
+                              { label: 'Account Role', value: currentUserDetails?.role, icon: Shield },
+                            ].map((item, idx) => (
+                              <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                                  <item.icon size={18} className="text-gray-400" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{item.label}</p>
+                                  <p className="text-sm font-bold text-[#0D2E5E]">{item.value || 'N/A'}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-[32px] border shadow-sm flex flex-col items-center justify-center text-center space-y-4" style={{ borderColor: '#E2E8F0' }}>
+                          <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center border-4 border-white shadow-xl">
+                            <User size={48} className="text-[#ef4136]" />
+                          </div>
+                          <div>
+                            <h4 className="font-black text-xl text-[#0D2E5E]">{currentUserDetails?.fullName}</h4>
+                            <p className="text-sm text-gray-500">{currentUserDetails?.email}</p>
+                          </div>
+                          <div className="px-4 py-1.5 bg-[#0D2E5E] text-white rounded-full text-xs font-bold uppercase tracking-widest">
+                            {currentUserDetails?.role} Account
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {settingsTab === 'shop' && (
+                      <div className="space-y-6">
+                        {/* Shop Banners */}
+                        <div className="relative h-64 rounded-[40px] overflow-hidden bg-gray-200 border-4 border-white shadow-xl">
+                          <img
+                            src={currentUserDetails?.shopCoverImage || 'https://via.placeholder.com/1200x400'}
+                            className="w-full h-full object-cover"
+                            alt="Cover"
+                          />
+                          <div className="absolute bottom-6 left-6 flex items-end gap-6">
+                            <div className="w-32 h-32 rounded-[24px] border-4 border-white shadow-2xl overflow-hidden bg-white">
+                              <img
+                                src={currentUserDetails?.logo || 'https://via.placeholder.com/200'}
+                                className="w-full h-full object-cover"
+                                alt="Logo"
+                              />
+                            </div>
+                            <div className="mb-2">
+                              <h4 className="text-2xl font-black text-white drop-shadow-lg">{currentUserDetails?.shopName}</h4>
+                              <p className="text-white/90 font-bold flex items-center gap-1 drop-shadow-md">
+                                <MapPin size={16} /> {currentUserDetails?.businessAddress || 'Location not set'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Account Type</p>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Tag size={20} />
+                              </div>
+                              <span className="font-bold text-[#0D2E5E] capitalize">{currentUserDetails?.accountType}</span>
+                            </div>
+                          </div>
+                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Member Since</p>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                                <Calendar size={20} />
+                              </div>
+                              <span className="font-bold text-[#0D2E5E]">
+                                {new Date(currentUserDetails?.createdAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Profile Status</p>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                                <Zap size={20} />
+                              </div>
+                              <span className="font-bold text-[#0D2E5E]">100% Complete</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {settingsTab === 'bank' && (
+                      <div className="bg-white p-10 rounded-[40px] border shadow-sm relative overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                        {/* Abstract Background Shape */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 rounded-full -mr-32 -mt-32 -z-10" />
+
+                        <div className="flex items-center justify-between mb-10">
+                          <div>
+                            <h3 className="text-2xl font-black text-[#0D2E5E]">Banking Details</h3>
+                            <p className="text-sm text-gray-500 mt-1">Information used for settlements and payments</p>
+                          </div>
+                          <div className="p-4 rounded-[20px] bg-blue-50 text-blue-600">
+                            <Building2 size={32} />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          {[
+                            { label: 'Account Title', value: currentUserDetails?.accountTitle, icon: User },
+                            { label: 'Bank Branch Code', value: currentUserDetails?.branchCode, icon: MapPin },
+                            { label: 'Account Number', value: currentUserDetails?.accountNumber, icon: CreditCard },
+                            { label: 'IBAN Number', value: currentUserDetails?.ibanNumber, icon: Globe },
+                          ].map((item, idx) => (
+                            <div key={idx} className="border-b pb-6" style={{ borderColor: '#F1F5F9' }}>
+                              <div className="flex items-center gap-2 mb-2 text-gray-400">
+                                {item.icon && <item.icon size={14} />}
+                                <span className="text-[10px] font-bold uppercase tracking-[2px]">{item.label}</span>
+                              </div>
+                              <p className="text-lg font-black text-[#0D2E5E] tracking-tight">{item.value || 'Not provided'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {/* ─── STEP 4: Payment ─── */}
-              {onboardingStep === 'payment' && (
-                <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F0FDF4' }}>
-                      <CreditCard size={20} style={{ color: '#10B981' }} />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Advance Payment</h2>
-                      <p className="text-sm" style={{ color: '#64748B' }}>Complete your subscription activation</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Progress Stepper */}
+                  <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6" style={{ borderColor: '#E2E8F0' }}>
+                    <div className="flex items-center gap-2">
+                      {[
+                        { key: 'store', label: 'Store Setup' },
+                        { key: 'documents', label: 'Documents' },
+                        { key: 'subscription', label: 'Subscription' },
+                        { key: 'payment', label: 'Payment' },
+                      ].map((s, idx) => (
+                        <div key={s.key} className="flex items-center gap-2 flex-1">
+                          <div className="flex flex-col items-center gap-2 flex-1">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                              style={{
+                                backgroundColor: idx <= onboardingStepIdx ? '#0D2E5E' : '#F1F5F9',
+                                color: idx <= onboardingStepIdx ? 'white' : '#94A3B8',
+                                border: idx <= onboardingStepIdx ? 'none' : '2px solid #E2E8F0'
+                              }}
+                            >
+                              {idx < onboardingStepIdx ? <CheckCircle2 size={20} /> : idx + 1}
+                            </div>
+                            <span className="text-xs font-semibold text-center" style={{ color: idx <= onboardingStepIdx ? '#0D2E5E' : '#94A3B8' }}>{s.label}</span>
+                          </div>
+                          {idx < 3 && (
+                            <div className="h-1 flex-1 mx-2 rounded-full" style={{ backgroundColor: idx < onboardingStepIdx ? '#0D2E5E' : '#F1F5F9' }} />
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl mb-6" style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: '#166534' }}>
-                          {selectedPlan === 'manufacturer' ? 'Manufacturer Plan' : 'Shopkeeper Plan'}
+                  {/* ─── STEP 1: Store Setup ─── */}
+                  {onboardingStep === 'store' && (
+                    <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EFF6FF' }}>
+                          <Store size={20} style={{ color: '#0D2E5E' }} />
+                        </div>
+                        <div>
+                          <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Store Setup</h2>
+                          <p className="text-sm" style={{ color: '#64748B' }}>Tell us about your business</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-5">
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Name *</label>
+                          <input
+                            type="text"
+                            value={storeForm.shopName}
+                            onChange={(e) => setStoreForm({ ...storeForm, shopName: e.target.value })}
+                            placeholder="e.g. Ahmed Building Materials"
+                            className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Logo</label>
+                          <input
+                            type="file"
+                            id="logo-upload"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setStoreForm({ ...storeForm, logo: file });
+                            }}
+                          />
+                          <div
+                            onClick={() => document.getElementById('logo-upload')?.click()}
+                            className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                            style={{ borderColor: storeForm.logo ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.logo ? '#F0FDF4' : 'transparent' }}
+                          >
+                            {storeForm.logo ? (
+                              <div className="flex flex-col items-center w-full">
+                                <img
+                                  src={URL.createObjectURL(storeForm.logo)}
+                                  alt="Logo preview"
+                                  className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
+                                />
+                                <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Logo</p>
+                              </div>
+                            ) : (
+                              <>
+                                <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
+                                <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload logo</p>
+                                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 200×200px</p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Cover Image</label>
+                          <input
+                            type="file"
+                            id="cover-upload"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setStoreForm({ ...storeForm, shopCoverImage: file });
+                            }}
+                          />
+                          <div
+                            onClick={() => document.getElementById('cover-upload')?.click()}
+                            className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                            style={{ borderColor: storeForm.shopCoverImage ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.shopCoverImage ? '#F0FDF4' : 'transparent' }}
+                          >
+                            {storeForm.shopCoverImage ? (
+                              <div className="flex flex-col items-center w-full">
+                                <img
+                                  src={URL.createObjectURL(storeForm.shopCoverImage)}
+                                  alt="Cover preview"
+                                  className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
+                                />
+                                <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Cover Image</p>
+                              </div>
+                            ) : (
+                              <>
+                                <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
+                                <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload cover image</p>
+                                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 1200×400px</p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Address *</label>
+                            <input
+                              type="text"
+                              value={storeForm.address}
+                              onChange={(e) => setStoreForm({ ...storeForm, address: e.target.value })}
+                              placeholder="e.g. Store #4, Main Market, Lahore"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Account Type *</label>
+                            <select
+                              value={storeForm.accountType}
+                              onChange={(e) => setStoreForm({ ...storeForm, accountType: e.target.value })}
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            >
+                              <option value="retailer">Retailer</option>
+                              <option value="wholesaler">Wholesaler</option>
+                              <option value="manufacturer">Manufacturer</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-8 flex justify-end">
+                        <button
+                          onClick={handleOnboardingNext}
+                          disabled={businessStep3Mutation.isPending}
+                          className="px-10 py-3 rounded-xl text-white font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+                          style={{ backgroundColor: '#0D2E5E' }}
+                        >
+                          {businessStep3Mutation.isPending ? 'Saving...' : 'Save & Continue'} <ChevronRight size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── STEP 2: Documents ─── */}
+                  {onboardingStep === 'documents' && (
+                    <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F0FDF4' }}>
+                          <FileText size={20} style={{ color: '#16A34A' }} />
+                        </div>
+                        <div>
+                          <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Banking & Identity</h2>
+                          <p className="text-sm" style={{ color: '#64748B' }}>Provide details for payments & verification</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Account Title *</label>
+                            <input
+                              type="text"
+                              value={bankForm.accountTitle}
+                              onChange={(e) => setBankForm({ ...bankForm, accountTitle: e.target.value })}
+                              placeholder="e.g. John Doe"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Branch Code *</label>
+                            <input
+                              type="text"
+                              value={bankForm.branchCode}
+                              onChange={(e) => setBankForm({ ...bankForm, branchCode: e.target.value })}
+                              placeholder="e.g. 0042"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Account Number *</label>
+                            <input
+                              type="text"
+                              value={bankForm.accountNumber}
+                              onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
+                              placeholder="e.g. 1234567890"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>IBAN Number *</label>
+                            <input
+                              type="text"
+                              value={bankForm.ibanNumber}
+                              onChange={(e) => setBankForm({ ...bankForm, ibanNumber: e.target.value })}
+                              placeholder="e.g. PK00 ABCD 1234 5678 9012"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-8 pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
+                        <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
+                          <ChevronLeft size={18} /> Back
+                        </button>
+                        <button
+                          onClick={handleOnboardingNext}
+                          disabled={documentsStep4Mutation.isPending}
+                          className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: '#0D2E5E' }}
+                        >
+                          {documentsStep4Mutation.isPending ? (
+                            <>Submitting... <RefreshCw size={18} className="animate-spin" /></>
+                          ) : (
+                            <>Submit Documents <ChevronRight size={18} /></>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── STEP 3: Subscription ─── */}
+                  {onboardingStep === 'subscription' && (
+                    <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
+                      <div className="text-center mb-8">
+                        <h2 className="font-bold text-2xl" style={{ color: '#0D2E5E' }}>Choose Your Subscription Plan</h2>
+                        <p className="text-sm mt-2" style={{ color: '#64748B' }}>
+                          Select a plan that best fits your business size and needs
                         </p>
-                        <p className="text-xs" style={{ color: '#16A34A' }}>Annual Subscription</p>
                       </div>
-                      <p className="font-bold text-xl" style={{ color: '#0D2E5E' }}>
-                        Rs. {selectedPlan === 'manufacturer' ? '270,000' : '50,000'}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Card Number</label>
-                      <input type="text" placeholder="1234 5678 9012 3456" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Expiry Date</label>
-                        <input type="date" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {subscriptionPlans.map((plan) => (
+                          <button
+                            key={plan.id}
+                            onClick={() => setSelectedPlan(plan.id)}
+                            className="rounded-2xl border-2 p-6 text-left transition-all hover:shadow-lg"
+                            style={{
+                              borderColor: selectedPlan === plan.id ? plan.color : '#E2E8F0',
+                              backgroundColor: selectedPlan === plan.id ? plan.bg : 'white',
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: plan.badgeColor }}>
+                                {plan.badge}
+                              </span>
+                              <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center" style={{
+                                borderColor: selectedPlan === plan.id ? plan.color : '#CBD5E1',
+                                backgroundColor: selectedPlan === plan.id ? plan.color : 'transparent',
+                              }}>
+                                {selectedPlan === plan.id && <CheckCircle2 size={14} className="text-white" />}
+                              </div>
+                            </div>
+                            <h3 className="font-bold text-xl mb-1" style={{ color: plan.color }}>{plan.name}</h3>
+                            <p className="text-sm mb-4" style={{ color: '#64748B' }}>{plan.description}</p>
+                            <div className="flex items-baseline gap-1 mb-5">
+                              <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Rs.</span>
+                              <span className="font-bold" style={{ fontSize: '28px', color: '#0D2E5E' }}>{plan.price}</span>
+                              <span className="text-sm" style={{ color: '#64748B' }}>{plan.period}</span>
+                            </div>
+                            <ul className="space-y-2">
+                              {plan.features.map((feat) => (
+                                <li key={feat} className="flex items-center gap-2 text-sm" style={{ color: '#374151' }}>
+                                  <CheckCircle2 size={14} style={{ color: plan.color, flexShrink: 0 }} />
+                                  {feat}
+                                </li>
+                              ))}
+                            </ul>
+                          </button>
+                        ))}
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>CVV</label>
-                        <input type="text" placeholder="•••" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+
+                      <div className="flex items-center gap-3">
+                        <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
+                          <ChevronLeft size={18} /> Back
+                        </button>
+                        <button
+                          onClick={() => setOnboardingStep('payment')}
+                          className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: '#0D2E5E' }}
+                        >
+                          Proceed to Payment <ChevronRight size={18} />
+                        </button>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Name on Card</label>
-                      <input type="text" placeholder="Muhammad Ahmed" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                  )}
+
+                  {/* ─── STEP 4: Payment ─── */}
+                  {onboardingStep === 'payment' && (
+                    <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F0FDF4' }}>
+                          <CreditCard size={20} style={{ color: '#10B981' }} />
+                        </div>
+                        <div>
+                          <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Advance Payment</h2>
+                          <p className="text-sm" style={{ color: '#64748B' }}>Complete your subscription activation</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl mb-6" style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: '#166534' }}>
+                              {selectedPlan === 'manufacturer' ? 'Manufacturer Plan' : 'Shopkeeper Plan'}
+                            </p>
+                            <p className="text-xs" style={{ color: '#16A34A' }}>Annual Subscription</p>
+                          </div>
+                          <p className="font-bold text-xl" style={{ color: '#0D2E5E' }}>
+                            Rs. {selectedPlan === 'manufacturer' ? '270,000' : '50,000'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Card Number</label>
+                          <input type="text" placeholder="1234 5678 9012 3456" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Expiry Date</label>
+                            <input type="date" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>CVV</label>
+                            <input type="text" placeholder="•••" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Name on Card</label>
+                          <input type="text" placeholder="Muhammad Ahmed" className="w-full px-4 py-3 rounded-xl border text-sm outline-none" style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-4 p-3 rounded-xl" style={{ backgroundColor: '#FFF7ED' }}>
+                        <Shield size={18} style={{ color: '#F97316' }} />
+                        <p className="text-xs" style={{ color: '#9A3412' }}>Your payment is secured with 256-bit SSL encryption</p>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-6 pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
+                        <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
+                          <ChevronLeft size={18} /> Back
+                        </button>
+                        <button
+                          onClick={() => {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            router.push('/login');
+                            toast.success("Registration steps completed. Please login to continue.");
+                          }}
+                          className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: '#ef4136' }}
+                        >
+                          Finish Setup <CheckCircle2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 mt-4 p-3 rounded-xl" style={{ backgroundColor: '#FFF7ED' }}>
-                    <Shield size={18} style={{ color: '#F97316' }} />
-                    <p className="text-xs" style={{ color: '#9A3412' }}>Your payment is secured with 256-bit SSL encryption</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 mt-6 pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
-                    <button onClick={handleOnboardingBack} className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2 border hover:bg-gray-50 transition-colors" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
-                      <ChevronLeft size={18} /> Back
-                    </button>
-                    <button
-                      onClick={() => {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        router.push('/login');
-                        toast.success("Setup complete. Please login to your dashboard.");
-                      }}
-                      className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: '#F97316' }}
-                    >
-                      <Zap size={18} /> Activate Subscription & Finish Setup
-                    </button>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
