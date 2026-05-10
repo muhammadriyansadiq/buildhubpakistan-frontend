@@ -7,6 +7,9 @@ import {
   Wrench, CheckCircle2, ArrowRight, Flame, Clock, Truck, Shield, RefreshCw
 } from 'lucide-react';
 import { useProducts } from '@/hooks/useProduct';
+import { useAddToCartMutation } from '@/hooks/useCart';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const banners = [
   {
@@ -127,6 +130,22 @@ export default function BuyerHome() {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const { data: productsData, isLoading: productsLoading } = useProducts();
   const products = Array.isArray(productsData) ? productsData : [];
+
+  const { mutateAsync: addToCart } = useAddToCartMutation();
+  const [addingProductId, setAddingProductId] = useState<number | null>(null);
+
+  const handleAddToCart = async (e: React.MouseEvent, productId: number) => {
+    e.stopPropagation();
+    setAddingProductId(productId);
+    try {
+      await addToCart({ productId, quantity: 1 });
+      toast.success('Product added to cart');
+    } catch (error) {
+      // Error is handled by apiClient toast
+    } finally {
+      setAddingProductId(null);
+    }
+  };
 
   const toggleWishlist = (id: number) => {
     setWishlist((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
@@ -353,11 +372,16 @@ export default function BuyerHome() {
                           )}
                         </div>
                         <button
-                          onClick={(e) => { e.stopPropagation(); }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity"
+                          onClick={(e) => handleAddToCart(e, product.id)}
+                          disabled={addingProductId === product.id}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           style={{ backgroundColor: '#ef4136' }}
                         >
-                          <ShoppingCart size={14} />
+                          {addingProductId === product.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <ShoppingCart size={14} />
+                          )}
                         </button>
                       </div>
                     </div>

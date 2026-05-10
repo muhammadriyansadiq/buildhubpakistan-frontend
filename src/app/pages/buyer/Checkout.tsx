@@ -71,7 +71,7 @@ export default function Checkout() {
         paymentMethod: paymentMethod,
         addressId: selectedAddress.id
       });
-      
+
       // The response structure might vary, but user provided a response example:
       // "transactionId": "TXN-..."
       setPlacedOrderId(response.data.transactionId || `#ORD-${Math.floor(Math.random() * 10000)}`);
@@ -192,9 +192,8 @@ export default function Checkout() {
                 <div key={s.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
-                        isActive || isCompleted ? 'shadow-lg' : ''
-                      }`}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${isActive || isCompleted ? 'shadow-lg' : ''
+                        }`}
                       style={{
                         backgroundColor: isCompleted ? '#16A34A' : isActive ? '#ef4136' : '#E2E8F0',
                         color: isActive || isCompleted ? 'white' : '#94A3B8'
@@ -241,9 +240,8 @@ export default function Checkout() {
                     <div
                       key={addr.id}
                       onClick={() => setSelectedAddress(addr)}
-                      className={`bg-white rounded-2xl shadow-sm border-2 p-6 cursor-pointer transition-all ${
-                        selectedAddress?.id === addr.id ? 'border-red-500 shadow-md' : ''
-                      }`}
+                      className={`bg-white rounded-2xl shadow-sm border-2 p-6 cursor-pointer transition-all ${selectedAddress?.id === addr.id ? 'border-red-500 shadow-md' : ''
+                        }`}
                       style={{ borderColor: selectedAddress?.id === addr.id ? '#ef4136' : '#E2E8F0' }}
                     >
                       <div className="flex items-start justify-between">
@@ -271,7 +269,7 @@ export default function Checkout() {
                 {!showNewAddress ? (
                   <button
                     onClick={() => setShowNewAddress(true)}
-                    className="w-full py-4 rounded-2xl border-2 border-dashed font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                    className="w-full py-4 rounded-2xl border-2 border-dashed font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer"
                     style={{ borderColor: '#E2E8F0', color: '#64748B' }}
                   >
                     + Add New Address
@@ -379,14 +377,14 @@ export default function Checkout() {
                     <div className="flex gap-3 mt-4">
                       <button
                         onClick={handleSaveNewAddress}
-                        className="flex-1 py-3 rounded-xl font-semibold text-white"
+                        className="flex-1 py-3 rounded-xl font-semibold text-white cursor-pointer"
                         style={{ backgroundColor: '#ef4136' }}
                       >
                         Save Address
                       </button>
                       <button
                         onClick={() => setShowNewAddress(false)}
-                        className="flex-1 py-3 rounded-xl font-semibold border-2"
+                        className="flex-1 py-3 rounded-xl font-semibold border-2 cursor-pointer"
                         style={{ borderColor: '#E2E8F0', color: '#64748B' }}
                       >
                         Cancel
@@ -397,7 +395,7 @@ export default function Checkout() {
 
                 <button
                   onClick={() => setStep('payment')}
-                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 cursor-pointer"
                   style={{ backgroundColor: '#ef4136' }}
                 >
                   Continue to Payment
@@ -423,9 +421,8 @@ export default function Checkout() {
                     <div
                       key={method.id}
                       onClick={() => setPaymentMethod(method.id as any)}
-                      className={`bg-white rounded-2xl shadow-sm border-2 p-5 cursor-pointer transition-all ${
-                        paymentMethod === method.id ? 'border-red-500 shadow-md' : ''
-                      }`}
+                      className={`bg-white rounded-2xl shadow-sm border-2 p-5 cursor-pointer transition-all ${paymentMethod === method.id ? 'border-red-500 shadow-md' : ''
+                        }`}
                       style={{ borderColor: paymentMethod === method.id ? '#ef4136' : '#E2E8F0' }}
                     >
                       <div className="flex items-center justify-between">
@@ -529,10 +526,10 @@ export default function Checkout() {
                       </div>
                     ) : cartItems?.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 pb-3 border-b last:border-0" style={{ borderColor: '#E2E8F0' }}>
-                        <img 
-                          src={item.product.images && item.product.images.length > 0 ? `${apiClient.defaults.baseURL?.replace('/api', '')}/${item.product.images[0]}` : 'https://placehold.co/100x100?text=No+Image'} 
-                          alt={item.product.title} 
-                          className="w-16 h-16 rounded-lg object-cover" 
+                        <img
+                          src={item.product.images && item.product.images.length > 0 ? `${apiClient.defaults.baseURL?.replace('/api', '')}/${item.product.images[0]}` : 'https://placehold.co/100x100?text=No+Image'}
+                          alt={item.product.title}
+                          className="w-16 h-16 rounded-lg object-cover"
                         />
                         <div className="flex-1">
                           <p className="font-semibold text-sm mb-1" style={{ color: '#3e3e3e' }}>{item.product.title}</p>

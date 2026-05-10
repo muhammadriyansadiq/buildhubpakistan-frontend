@@ -6,21 +6,40 @@ import {
   Search, ShoppingCart, Heart, User, Bell, Menu, X,
   MapPin, Phone, Package, Wrench, LogOut
 } from 'lucide-react';
-import logoSvg from '@/imports/svg-01.svg';
+import logoSvg from '@/imports/buildhub.png';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import apiClient from '@/api/api-client';
+import { useCart } from '@/hooks/useCart';
 
 export default function BuyerNavbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount] = useState(3);
+  const { data: cartItems } = useCart();
+  const cartCount = cartItems?.length || 0;
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+
+      // Fetch fresh user data from API
+      if (parsedUser.id) {
+        apiClient.get(`/users/${parsedUser.id}`)
+          .then(response => {
+            if (response.data.success) {
+              const userData = response.data.data;
+              setUser(userData);
+              localStorage.setItem('user', JSON.stringify(userData));
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching fresh user data:', error);
+          });
+      }
     }
   }, []);
 
@@ -64,7 +83,7 @@ export default function BuyerNavbar() {
 
       {/* Main navbar */}
       <div style={{ backgroundColor: '#000000' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-7xl mx-auto py-3">
           <div className="flex items-center gap-4">
             {/* Logo */}
             <button onClick={() => router.push('/')} className="flex items-center gap-2 flex-shrink-0">
@@ -72,7 +91,7 @@ export default function BuyerNavbar() {
             </button>
 
             {/* Search bar */}
-            <div className="flex-1 max-w-2xl">
+            <div className="flex-1 max-w-4xl">
               <div className="flex rounded-lg overflow-hidden border-2" style={{ borderColor: '#ef4136' }}>
                 <div className="flex items-center pl-3 pr-2 bg-white">
                   <select className="text-xs text-gray-600 bg-transparent border-r pr-2 border-gray-200 outline-none cursor-pointer">
@@ -110,14 +129,14 @@ export default function BuyerNavbar() {
               </button>
               <button
                 onClick={() => router.push('/buyer/dashboard/wishlist')}
-                className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10 cursor-pointer"
               >
                 <Heart size={20} />
                 <span className="text-xs hidden md:block">Wishlist</span>
               </button>
               <button
                 onClick={() => router.push('/cart')}
-                className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10 relative"
+                className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10 relative cursor-pointer"
               >
                 <ShoppingCart size={20} />
                 <span className="text-xs hidden md:block">Cart</span>
@@ -133,7 +152,7 @@ export default function BuyerNavbar() {
               {user ? (
                 <button
                   onClick={handleLogout}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10 cursor-pointer"
                 >
                   <LogOut size={20} />
                   <span className="text-xs hidden md:block">Logout</span>
@@ -141,20 +160,35 @@ export default function BuyerNavbar() {
               ) : (
                 <button
                   onClick={() => router.push('/login')}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10 cursor-pointer"
                 >
                   <User size={20} />
                   <span className="text-xs hidden md:block">Login</span>
                 </button>
               )}
-              
+
               {user && (
                 <button
                   onClick={() => router.push('/buyer/dashboard')}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                  className="flex items-center gap-2.5 px-3 py-1.5 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10"
                 >
-                  <User size={20} />
-                  <span className="text-xs hidden md:block">Account</span>
+                  {user.logo ? (
+                    <img
+                      src={user.logo}
+                      alt={user.fullName}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-white/20"
+                    />
+                  ) : (
+                    <User size={20} />
+                  )}
+                  <div className="flex flex-col items-start -space-y-0.5">
+                    <span className="text-[11px] font-semibold hidden md:block truncate max-w-[100px]">
+                      {user.fullName || 'Account'}
+                    </span>
+                    <span className="text-[10px] opacity-60 hidden lg:block truncate max-w-[120px]">
+                      {user.email}
+                    </span>
+                  </div>
                 </button>
               )}
               <button
@@ -193,17 +227,30 @@ export default function BuyerNavbar() {
             {user ? (
               <>
                 <button
-                  onClick={() => router.push('/buyer/dashboard')}
-                  className="flex items-center gap-2 w-full text-left px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm"
-                >
-                  <User size={16} /> My Account
-                </button>
-                <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 w-full text-left px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm"
                 >
                   <LogOut size={16} /> Logout
                 </button>
+                <button
+                  onClick={() => router.push('/buyer/dashboard')}
+                  className="flex items-center gap-3 w-full text-left px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md text-sm"
+                >
+                  {user.logo ? (
+                    <img
+                      src={user.logo}
+                      alt={user.fullName}
+                      className="w-8 h-8 rounded-full object-cover border border-white/20"
+                    />
+                  ) : (
+                    <User size={18} />
+                  )}
+                  <div className="flex flex-col">
+                    <span className="font-medium">{user.fullName || 'My Account'}</span>
+                    <span className="text-[10px] opacity-50">{user.email}</span>
+                  </div>
+                </button>
+
               </>
             ) : (
               <button
