@@ -51,17 +51,7 @@ export interface Order {
     shopName?: string | null;
     logo?: string | null;
   };
-  address?: {
-    id: number;
-    fullName: string;
-    phone: string;
-    email: string;
-    streetAddress: string;
-    city: string;
-    province: string;
-    postalCode: string;
-    label: string;
-  };
+
 }
 
 export interface OrderStats {

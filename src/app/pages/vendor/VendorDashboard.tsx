@@ -12,6 +12,7 @@ import {
   Mail, MessageSquare, Store, Camera, Building2, CreditCard,
   Zap, Award, Shield, ChevronLeft, X, Loader2, Globe
 } from 'lucide-react';
+import BuildHubLogo from '@/imports/buildhub.png';
 import {
   useQuotations,
   useQuotationDetails,
@@ -170,8 +171,16 @@ export default function VendorDashboard() {
 
   const navigate2 = (section: Section) => {
     setActiveSection(section);
-    router.push(`/vendor/dashboard/${section}`);
+    router.push(`/vendor/dashboard/${section}`, { scroll: false });
   };
+
+  // Sync active section with URL to prevent flickering on browser navigation
+  useEffect(() => {
+    if (params?.section && params.section !== activeSection) {
+      setActiveSection(params.section as Section);
+    }
+  }, [params?.section]);
+
 
   // Quotation state (moved up to fix initialization error)
   const [user, setUser] = useState<any>(() => {
@@ -196,19 +205,17 @@ export default function VendorDashboard() {
   const [quoteTotalPrice, setQuoteTotalPrice] = useState('');
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
     const savedOnboardToken = localStorage.getItem('onboardToken');
     const effectiveToken = savedToken || savedOnboardToken;
     if (effectiveToken) setToken(effectiveToken);
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      if (parsedUser && !parsedUser.isProfileComplete) {
-        setActiveSection('settings');
-      }
+    
+    // User is already initialized in state, so we just check for profile completion here
+    if (user && !user.isProfileComplete) {
+      setActiveSection('settings');
     }
-  }, []);
+  }, [user]);
+
 
   // RFQ Hooks
   const { data: rfqStatsData } = useQuotationStats({ sellerId: user?.id });
@@ -605,16 +612,12 @@ export default function VendorDashboard() {
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 flex flex-col shadow-xl" style={{ backgroundColor: '#0D2E5E' }}>
         {/* Logo */}
-        <div className="p-5 border-b" style={{ borderColor: '#1E4080' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
-              <HardHat size={22} className="text-white" />
-            </div>
-            <div>
-              <div className="text-white font-bold text-sm">Build Hub</div>
-              <div className="text-xs" style={{ color: '#ef4136' }}>Vendor Panel</div>
-            </div>
-          </div>
+        <div className="p-6 border-b flex justify-center" style={{ borderColor: '#1E4080' }}>
+          <img 
+            src={typeof BuildHubLogo === 'string' ? BuildHubLogo : BuildHubLogo.src} 
+            alt="Build Hub Logo" 
+            className="h-10 w-auto object-contain"
+          />
         </div>
 
         {/* Nav */}
@@ -723,7 +726,7 @@ export default function VendorDashboard() {
 
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto px-1 md:px-4 py-6">
 
           {/* ─── PRODUCTS LISTING ─── */}
           {activeSection === 'products' && (
@@ -1250,8 +1253,13 @@ export default function VendorDashboard() {
                                   {detailedOrder.address.streetAddress}, {detailedOrder.address.city}, {detailedOrder.address.province}, {detailedOrder.address.postalCode}
                                 </span>
                               ) : (
-                                <span>{selectedOrder.shippingAddress}</span>
+                                <span>
+                                  {selectedOrder.address ? 
+                                    `${selectedOrder.address.streetAddress}, ${selectedOrder.address.city}, ${selectedOrder.address.province}, ${selectedOrder.address.postalCode}` 
+                                    : 'N/A'}
+                                </span>
                               )}
+
                             </div>
                           </div>
                         </div>
@@ -2189,20 +2197,11 @@ export default function VendorDashboard() {
 
           {/* ─── SETTINGS & ONBOARDING ─── */}
           {activeSection === 'settings' && (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-6xl mx-auto space-y-6 px-2">
+
               {isProfileComplete ? (
                 <div className="space-y-6">
-                  {/* Settings Header */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
-                    <div>
-                      <h2 className="text-2xl font-black text-[#0D2E5E]">Settings</h2>
-                      <p className="text-sm text-gray-500">Manage your store profile and account details</p>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full border border-green-100">
-                      <CheckCircle2 size={18} />
-                      <span className="text-sm font-bold uppercase tracking-wider">Verified Vendor</span>
-                    </div>
-                  </div>
+
 
                   {/* Settings Tabs */}
                   <div className="flex p-1.5 bg-gray-100 rounded-2xl overflow-x-auto custom-scrollbar">
@@ -2226,7 +2225,7 @@ export default function VendorDashboard() {
                   </div>
 
                   {/* Tab Content */}
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="space-y-6">
                     {settingsTab === 'profile' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white p-8 rounded-[32px] border shadow-sm space-y-6" style={{ borderColor: '#E2E8F0' }}>
@@ -2353,8 +2352,8 @@ export default function VendorDashboard() {
                                   <Building2 size={24} className="text-white/80" />
                                 </div>
                                 <div>
-                                  <p className="text-white/60 text-[10px] font-bold uppercase tracking-[2px]">Banking Profile</p>
-                                  <h3 className="text-xl font-bold">{currentUserDetails?.accountTitle || 'Direct Deposit'}</h3>
+                                  <p className="text-white/60 text-[9px] font-bold uppercase tracking-[1.5px]">Banking Profile</p>
+                                  <h3 className="text-lg font-bold">{currentUserDetails?.accountTitle || 'Direct Deposit'}</h3>
                                 </div>
                               </div>
 
@@ -2362,7 +2361,7 @@ export default function VendorDashboard() {
                                 <div>
                                   <p className="text-white/40 text-[10px] font-bold uppercase tracking-[2px] mb-2">Account Identification</p>
                                   <div className="flex items-center gap-4">
-                                    <p className="text-lg md:text-2xl font-mono tracking-[4px] font-medium">
+                                    <p className="text-base md:text-lg font-mono tracking-[3px] font-medium">
                                       {currentUserDetails?.ibanNumber ?
                                         currentUserDetails.ibanNumber.match(/.{1,4}/g)?.join(' ') :
                                         '•••• •••• •••• ••••'
@@ -2396,8 +2395,8 @@ export default function VendorDashboard() {
                                 <span className="text-[8px] font-black tracking-widest opacity-40 uppercase">Secure</span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <p className="text-white/30 text-[9px] font-bold mb-1 uppercase">Vendor Network</p>
-                                <div className="text-2xl font-black italic tracking-tighter opacity-80">
+                                <p className="text-white/30 text-[8px] font-bold mb-1 uppercase">Vendor Network</p>
+                                <div className="text-xl font-black italic tracking-tighter opacity-80">
                                   B<span className="text-orange-500">HUB</span>
                                 </div>
                               </div>
@@ -2432,8 +2431,8 @@ export default function VendorDashboard() {
                                   <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-400 uppercase">{item.label}</span>
                                 </div>
                                 <div className="relative">
-                                  <p className="text-base font-bold text-[#0D2E5E] leading-snug">{item.value || 'Not provided'}</p>
-                                  <div className="absolute -bottom-2 left-0 w-0 h-[2px] bg-orange-500 group-hover:w-full transition-all duration-300" />
+                                  <p className="text-sm font-semibold text-[#0D2E5E] leading-snug">{item.value || 'Not provided'}</p>
+                                  <div className="absolute -bottom-1 left-0 w-0 h-[1px] bg-orange-500 group-hover:w-full transition-all duration-300" />
                                 </div>
                               </div>
                             ))}

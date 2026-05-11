@@ -24,7 +24,14 @@ const statusConfig: any = {
 };
 
 export default function VendorQuotations() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    }
+    return null;
+  });
+
   const [selectedRFQ, setSelectedRFQ] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,10 +41,8 @@ export default function VendorQuotations() {
   const [replyMessage, setReplyMessage] = useState('');
   const [quotePrice, setQuotePrice] = useState('');
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) setUser(JSON.parse(savedUser));
-  }, []);
+  // Removed redundant user initialization effect
+
 
   const { data: statsData } = useQuotationStats({ sellerId: user?.id });
   const { data: rfqsData, isLoading: isLoadingList } = useQuotations({
@@ -106,7 +111,7 @@ export default function VendorQuotations() {
     const isAccepted = rfq.responses?.some((res: any) => res.quotationStatus === 'Accepted');
 
     return (
-      <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <button
           onClick={() => setSelectedRFQ(null)}
@@ -206,7 +211,7 @@ export default function VendorQuotations() {
               {messages.map((msg) => {
                 const isMe = msg.senderId === user?.id;
                 return (
-                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1 duration-300`}>
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] ${isMe ? 'ml-8' : 'mr-8'}`}>
                       <div className={`flex items-center gap-2 mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                         {isMe && (
@@ -231,10 +236,11 @@ export default function VendorQuotations() {
                         </p>
 
                         {'basePrice' in msg && msg.basePrice && (
-                          <div className="mt-2 flex items-center justify-between gap-3 p-2 bg-slate-900 rounded-lg text-white">
+                          <div className="mt-2 flex items-center justify-between gap-3 p-2 rounded-lg text-white" style={{ backgroundColor: '#0d2e5e' }}>
                             <span className="text-[9px] font-bold uppercase tracking-tighter opacity-70">Quote:</span>
                             <span className="text-sm font-black text-red-400">Rs. {Number((msg as any).basePrice).toLocaleString()}</span>
                           </div>
+
                         )}
                       </div>
                     </div>
@@ -311,16 +317,9 @@ export default function VendorQuotations() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-black text-3xl text-slate-800 tracking-tight mb-2">RFQ Management</h2>
-          <p className="text-sm font-medium text-slate-400">Handle and respond to quotation requests from potential buyers</p>
-        </div>
-        <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-100 text-slate-600 font-bold text-sm hover:shadow-lg transition-all">
-          <Download size={18} /> Export RFQs
-        </button>
-      </div>
+    <div className="space-y-6">
+      {/* Redundant header removed - using Dashboard header instead */}
+
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -375,10 +374,11 @@ export default function VendorQuotations() {
         {/* List Content */}
         <div className="divide-y divide-slate-50">
           {isLoadingList ? (
-            <div className="p-20 text-center">
-              <RefreshCw size={48} className="mx-auto mb-4 animate-spin text-red-600" />
+            <div className="min-h-[400px] flex flex-col items-center justify-center">
+              <RefreshCw size={48} className="mb-4 animate-spin text-red-600" />
               <p className="font-bold text-slate-400">Loading your RFQs...</p>
             </div>
+
           ) : rfqs.length > 0 ? (
             rfqs.map((rfq: any) => {
               const status = statusConfig[rfq.status] || { label: rfq.status, color: '#64748b', bg: '#f1f5f9', icon: Clock };
