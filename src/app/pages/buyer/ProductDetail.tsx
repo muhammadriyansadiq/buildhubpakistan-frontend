@@ -12,17 +12,17 @@ import {
   Building2, FileText, Loader2, Mail, Calendar
 } from 'lucide-react';
 import { useCreateQuotationMutation } from '@/hooks/useQuotation';
+import { useReviews, useCreateReviewMutation } from '@/hooks/useReview';
+
+
 
 const relatedProducts = [
   { id: 2, name: 'Sand (Fine Grade)', price: 850, img: 'https://images.unsplash.com/photo-1763926025477-423847028860?w=200&h=160&fit=crop', rating: 4.2 },
   { id: 3, name: 'Coarse Aggregate', price: 1100, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=200&h=160&fit=crop', rating: 4.4 },
   { id: 4, name: 'Steel Bar 12mm', price: 10200, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=200&h=160&fit=crop', rating: 4.6 },
 ];
-const reviews = [
-  { id: 1, name: 'Muhammad Hassan', rating: 5, date: '2026-04-01', comment: 'Excellent quality. Arrived on time and packaging was intact. Highly recommend.', helpful: 12 },
-  { id: 2, name: 'Raza Builders', rating: 4, date: '2026-03-28', comment: 'Good product. Delivery was fast. Will order again in bulk.', helpful: 8 },
-  { id: 3, name: 'Ali Construction', rating: 5, date: '2026-03-20', comment: 'Best price in the market. Vendor was very responsive. 5 stars!', helpful: 15 },
-];
+// Hardcoded reviews removed - now using dynamic data from hook
+
 
 export default function ProductDetail() {
   const router = useRouter();
@@ -43,6 +43,61 @@ export default function ProductDetail() {
   const createRFQMutation = useCreateQuotationMutation();
   const [activeTab, setActiveTab] = useState('description');
   const [addedToCart, setAddedToCart] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  // Review Create States
+  const [newRating, setNewRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [newComment, setNewComment] = useState('');
+  const createReviewMutation = useCreateReviewMutation();
+
+
+
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const { data: apiReviews, isLoading: reviewsLoading } = useReviews({ 
+    sellerId: product?.sellerId 
+  });
+
+
+  const reviewsList = Array.isArray(apiReviews) ? apiReviews : [];
+  const reviewCount = reviewsList.length;
+
+  const hasAlreadyReviewed = user && reviewsList.some(r => Number(r.userId) === Number(user.id));
+
+  const handleCreateReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newRating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+    if (!newComment.trim()) {
+      toast.error('Please add a comment');
+      return;
+    }
+
+    
+    try {
+      await createReviewMutation.mutateAsync({
+        productId: productId,
+        sellerId: product.sellerId,
+        rating: newRating,
+        comment: newComment
+      });
+      toast.success('Review submitted successfully!');
+      setNewComment('');
+    } catch (error) {
+      toast.error('Failed to submit review');
+    }
+  };
+
+
 
   if (isLoading) {
     return (
@@ -184,7 +239,7 @@ export default function ProductDetail() {
                 ))}
               </div>
               <span className="font-semibold text-sm" style={{ color: '#1E293B' }}>4.5</span>
-              <span className="text-sm" style={{ color: '#64748B' }}>(234 reviews)</span>
+              <span className="text-sm" style={{ color: '#64748B' }}>({reviewCount} reviews)</span>
               <span className="text-sm" style={{ color: '#64748B' }}>·</span>
               <span className="text-sm" style={{ color: '#64748B' }}>1,247 sold</span>
             </div>
@@ -396,7 +451,8 @@ export default function ProductDetail() {
                   color: activeTab === tab ? '#F97316' : '#64748B',
                 }}
               >
-                {tab} {tab === 'reviews' && '(234)'}
+                {tab} {tab === 'reviews' && `(${reviewCount})`}
+
               </button>
             ))}
           </div>
@@ -452,33 +508,96 @@ export default function ProductDetail() {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="space-y-5">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b pb-5 last:border-0" style={{ borderColor: '#F1F5F9' }}>
-                    <div className="flex items-center justify-between mb-2">
+              <div className="space-y-6">
+                {/* Create Review Form */}
+                {user && !hasAlreadyReviewed && (
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200 mb-8">
+                    <h3 className="font-bold text-sm mb-4 text-[#0D2E5E]">Share your experience</h3>
+                    <form onSubmit={handleCreateReview} className="space-y-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white" style={{ backgroundColor: '#0D2E5E' }}>
-                          {review.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{review.name}</div>
-                          <div className="text-xs" style={{ color: '#94A3B8' }}>{review.date}</div>
+                        <span className="text-xs font-semibold text-slate-500">Your Rating:</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setNewRating(s)}
+                              onMouseEnter={() => setHoverRating(s)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="hover:scale-120 transition-transform p-0.5"
+                            >
+                              <Star
+                                size={24}
+                                style={{
+                                  fill: s <= (hoverRating || newRating) ? '#F59E0B' : 'none',
+                                  color: s <= (hoverRating || newRating) ? '#F59E0B' : '#CBD5E1'
+                                }}
+                                className="transition-colors duration-200"
+                              />
+                            </button>
+                          ))}
+
                         </div>
                       </div>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star key={s} size={13} style={{ fill: s <= review.rating ? '#F59E0B' : 'none', color: s <= review.rating ? '#F59E0B' : '#CBD5E1' }} />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-sm" style={{ color: '#475569' }}>{review.comment}</p>
-                    <button className="mt-2 text-xs" style={{ color: '#94A3B8' }}>
-                      👍 Helpful ({review.helpful})
-                    </button>
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Write your review here..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none focus:border-blue-500 transition-all"
+                        style={{ borderColor: '#E2E8F0' }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={createReviewMutation.isPending}
+                        className="px-6 py-2.5 bg-[#0D2E5E] text-white rounded-xl text-xs font-bold hover:bg-[#1e40af] transition-all disabled:opacity-50"
+                      >
+                        {createReviewMutation.isPending ? 'Submitting...' : 'Post Review'}
+                      </button>
+                    </form>
                   </div>
-                ))}
+                )}
+
+                <div className="space-y-5">
+
+                {reviewsLoading ? (
+                  <div className="flex justify-center p-10">
+                    <Loader2 className="animate-spin text-blue-600" />
+                  </div>
+                ) : reviewsList.length > 0 ? (
+                  reviewsList.map((review) => (
+                    <div key={review.id} className="border-b pb-5 last:border-0" style={{ borderColor: '#F1F5F9' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white" style={{ backgroundColor: '#0D2E5E' }}>
+                            {review.user?.fullName?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm capitalize" style={{ color: '#1E293B' }}>{review.user?.fullName}</div>
+                            <div className="text-[10px] font-bold text-blue-600 mb-0.5">{review.user?.phone}</div>
+                            <div className="text-[10px]" style={{ color: '#94A3B8' }}>{new Date(review.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star key={s} size={13} style={{ fill: s <= review.rating ? '#F59E0B' : 'none', color: s <= review.rating ? '#F59E0B' : '#CBD5E1' }} />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm" style={{ color: '#475569' }}>{review.comment}</p>
+
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10">
+                    <p className="text-gray-500">No reviews found for this user.</p>
+                  </div>
+                )}
+                </div>
               </div>
             )}
+
+
           </div>
         </div>
 
