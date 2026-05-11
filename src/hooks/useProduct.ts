@@ -50,6 +50,7 @@ export interface Category {
   name?: string;
   title?: string;
   description?: string;
+  image?: string;
 }
 
 // --- Category Hooks ---

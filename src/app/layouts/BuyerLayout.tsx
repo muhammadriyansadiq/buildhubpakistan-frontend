@@ -1,3 +1,5 @@
+'use client';
+
 import BuyerNavbar from '../components/layout/BuyerNavbar';
 import DemoNav from '../components/layout/DemoNav';
 import Footer from '../components/layout/Footer';
