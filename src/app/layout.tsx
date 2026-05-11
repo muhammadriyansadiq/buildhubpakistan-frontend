@@ -3,12 +3,17 @@ import { Inter } from 'next/font/google';
 import '../styles/index.css'; // Adjust if needed
 import { QueryProvider } from '../providers/query-provider';
 import { Toaster } from './components/ui/sonner';
+import Favicon from '../imports/buildhub.png';
+
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Build Hub Frontend',
+  title: 'Build Hub Pakistan',
   description: 'Next.js App',
+  icons: {
+    icon: Favicon.src,
+  },
 };
 
 export default function RootLayout({

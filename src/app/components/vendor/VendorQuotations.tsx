@@ -261,39 +261,39 @@ export default function VendorQuotations() {
                       value={quotePrice}
                       onChange={(e) => setQuotePrice(e.target.value)}
                       placeholder="Enter Quote Price (PKR)"
-                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all"
+                      className="w-full h-14 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all"
                     />
+
                   </div>
 
-                  {/* Message Input */}
-                  <div className="md:col-span-2 flex items-center gap-4">
-                    <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner p-1 focus-within:border-red-200 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300">
-                      <textarea
-                        value={replyMessage}
-                        onChange={(e) => setReplyMessage(e.target.value)}
-                        placeholder="Add terms, conditions or a message for the buyer..."
-                        rows={1}
-                        className="w-full px-5 py-3.5 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
-                        onInput={(e) => {
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-                        }}
-                      />
-                    </div>
+                  {/* Message Input with Send Button Inside */}
+                  <div className="md:col-span-2 h-14 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300 flex items-center pr-1.5 overflow-hidden">
+                    <textarea
+                      value={replyMessage}
+                      onChange={(e) => setReplyMessage(e.target.value)}
+                      placeholder="Add terms, conditions or a message for the buyer..."
+                      rows={1}
+                      className="flex-1 px-5 py-2 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                      }}
+                    />
                     <button
                       onClick={handleSendQuote}
                       disabled={respondMutation.isPending}
-                      className="w-14 h-14 rounded-2xl text-white shadow-xl shadow-red-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
+                      className="w-11 h-11 rounded-xl text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
                       style={{ backgroundColor: '#ef4136' }}
                     >
                       {respondMutation.isPending ? (
-                        <RefreshCw size={24} className="animate-spin" />
+                        <RefreshCw size={20} className="animate-spin" />
                       ) : (
-                        <Send size={24} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                        <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
                       )}
                     </button>
                   </div>
+
                 </div>
                 <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-300">
                   Your quote will be visible to the buyer immediately

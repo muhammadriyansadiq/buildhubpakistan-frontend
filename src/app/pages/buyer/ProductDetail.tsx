@@ -21,8 +21,8 @@ const relatedProducts = [
   { id: 3, name: 'Coarse Aggregate', price: 1100, img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=200&h=160&fit=crop', rating: 4.4 },
   { id: 4, name: 'Steel Bar 12mm', price: 10200, img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=200&h=160&fit=crop', rating: 4.6 },
 ];
-// Hardcoded reviews removed - now using dynamic data from hook
 
+// Hardcoded reviews removed - now using dynamic data from hook
 
 export default function ProductDetail() {
   const router = useRouter();

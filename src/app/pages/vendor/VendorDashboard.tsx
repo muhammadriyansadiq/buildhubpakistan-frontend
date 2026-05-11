@@ -209,7 +209,7 @@ export default function VendorDashboard() {
     const savedOnboardToken = localStorage.getItem('onboardToken');
     const effectiveToken = savedToken || savedOnboardToken;
     if (effectiveToken) setToken(effectiveToken);
-    
+
     // User is already initialized in state, so we just check for profile completion here
     if (user && !user.isProfileComplete) {
       setActiveSection('settings');
@@ -613,9 +613,9 @@ export default function VendorDashboard() {
       <aside className="w-64 flex-shrink-0 flex flex-col shadow-xl" style={{ backgroundColor: '#0D2E5E' }}>
         {/* Logo */}
         <div className="p-6 border-b flex justify-center" style={{ borderColor: '#1E4080' }}>
-          <img 
-            src={typeof BuildHubLogo === 'string' ? BuildHubLogo : BuildHubLogo.src} 
-            alt="Build Hub Logo" 
+          <img
+            src={typeof BuildHubLogo === 'string' ? BuildHubLogo : BuildHubLogo.src}
+            alt="Build Hub Logo"
             className="h-10 w-auto object-contain"
           />
         </div>
@@ -1254,8 +1254,8 @@ export default function VendorDashboard() {
                                 </span>
                               ) : (
                                 <span>
-                                  {selectedOrder.address ? 
-                                    `${selectedOrder.address.streetAddress}, ${selectedOrder.address.city}, ${selectedOrder.address.province}, ${selectedOrder.address.postalCode}` 
+                                  {selectedOrder.address ?
+                                    `${selectedOrder.address.streetAddress}, ${selectedOrder.address.city}, ${selectedOrder.address.province}, ${selectedOrder.address.postalCode}`
                                     : 'N/A'}
                                 </span>
                               )}
@@ -1269,8 +1269,12 @@ export default function VendorDashboard() {
                       <div className="pt-6 border-t" style={{ borderColor: '#F1F5F9' }}>
                         <h4 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Delivery Proof</h4>
                         {(detailedOrder?.vendorImage || selectedOrder.vendorImage) ? (
-                          <div className="relative group rounded-2xl overflow-hidden aspect-video border-2 border-dashed border-gray-200">
-                            <img src={detailedOrder?.vendorImage || selectedOrder.vendorImage || ''} alt="Delivery proof" className="w-full h-full object-cover" />
+                          <div className="relative group rounded-2xl overflow-hidden h-50 border-2 border-dashed border-gray-200">
+                            <img
+                              src={(detailedOrder?.vendorImage || selectedOrder.vendorImage || '').replace('/upload/', '/upload/q_70/')}
+                              alt="Delivery proof"
+                              className="w-full h-full object-cover"
+                            />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                               <label className="cursor-pointer bg-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl">
                                 Change Proof
@@ -2158,7 +2162,7 @@ export default function VendorDashboard() {
                               <p className="text-xs mb-2" style={{ color: '#94A3B8' }}>SKU: {product.sku}</p>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => handleUpdateStockStatus([product.id], currentStatus === 'In Stock' ? 'Out Of Stock' : 'In Stock')}
+                                  // onClick={() => handleUpdateStockStatus([product.id], currentStatus === 'In Stock' ? 'Out Of Stock' : 'In Stock')}
                                   disabled={updateStockStatusMutation.isPending}
                                   className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border-2 ${currentStatus === 'In Stock'
                                     ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'

@@ -89,13 +89,14 @@ export const useUpdateQuotationStatusMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: number | string; status: string }) => {
-      const { data } = await apiClient.patch(`/quotations/status/${id}`, {
-        quotationStatus: status,
+      const { data } = await apiClient.patch(`/quotations/${id}`, {
+        status: status,
       });
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['quotation'] });
       queryClient.invalidateQueries({ queryKey: ['quotation-stats'] });
     },
   });

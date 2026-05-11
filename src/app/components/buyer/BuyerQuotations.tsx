@@ -1,6 +1,8 @@
 'use client';
 
 import { useState as useReactState, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+
 import {
   MessageSquare, Clock, CheckCircle2, ChevronRight,
   Send, FileText, Download, RefreshCw, ShoppingBag,
@@ -30,7 +32,9 @@ export default function BuyerQuotations({
   newMessage,
   setNewMessage
 }: BuyerQuotationsProps) {
+  const router = useRouter();
   const [userId, setUserId] = useReactState<number | null>(null);
+
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -105,7 +109,9 @@ export default function BuyerQuotations({
       });
       toast.success("Order created successfully!");
       setSelectedRFQ(null);
+      router.push('/buyer/dashboard?section=orders');
     } catch (error) {
+
       toast.error("Failed to create order");
     }
   };
@@ -270,12 +276,13 @@ export default function BuyerQuotations({
                           {msg.text}
                         </p>
 
-                        {msg.basePrice && (
+                        {'basePrice' in msg && msg.basePrice && (
                           <div className="mt-2 flex items-center justify-between gap-3 p-2 bg-slate-900 rounded-lg text-white">
                             <span className="text-[9px] font-bold uppercase tracking-tighter opacity-70">Quote:</span>
-                            <span className="text-sm font-black text-red-400">Rs. {Number(msg.basePrice).toLocaleString()}</span>
+                            <span className="text-sm font-black text-red-400">Rs. {Number((msg as any).basePrice).toLocaleString()}</span>
                           </div>
                         )}
+
                       </div>
                     </div>
                   </div>
@@ -381,43 +388,44 @@ export default function BuyerQuotations({
               <div className="flex flex-col gap-4 max-w-5xl mx-auto">
                 <div className="flex items-center gap-4">
                   {/* Optional Price Input for Negotiation */}
-                  <div className="w-48 bg-slate-50 rounded-[1.5rem] border border-slate-200 shadow-inner p-1 focus-within:border-red-200 transition-all">
+                  <div className="w-48 h-14 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner focus-within:border-red-500 transition-all flex items-center">
                     <input
                       type="number"
                       value={newPrice}
                       onChange={(e) => setNewPrice(e.target.value)}
                       placeholder="Offer Price"
-                      className="w-full px-4 py-3 bg-transparent text-sm outline-none placeholder:text-slate-400 font-bold"
+                      className="w-full px-4 bg-transparent text-sm outline-none placeholder:text-slate-400 font-bold"
                     />
                   </div>
 
-                  <div className="flex-1 bg-slate-50 rounded-[1.5rem] border border-slate-200 shadow-inner p-1 focus-within:border-red-200 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300">
+                  <div className="flex-1 h-14 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-50 transition-all duration-300 flex items-center pr-1.5 overflow-hidden">
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Negotiate or ask a question..."
                       rows={1}
-                      className="w-full px-5 py-3.5 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
+                      className="flex-1 px-5 py-2 bg-transparent text-sm outline-none resize-none placeholder:text-slate-400 font-medium custom-scrollbar"
                       onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
                         target.style.height = 'auto';
                         target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
                       }}
                     />
+                    <button
+                      onClick={handleSendQuote}
+                      disabled={respondMutation.isPending}
+                      className="w-11 h-11 rounded-xl text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
+                      style={{ backgroundColor: '#ef4136' }}
+                    >
+                      {respondMutation.isPending ? (
+                        <RefreshCw size={20} className="animate-spin" />
+                      ) : (
+                        <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleSendQuote}
-                    disabled={respondMutation.isPending}
-                    className="w-14 h-14 rounded-2xl text-white shadow-xl shadow-red-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0 disabled:opacity-50"
-                    style={{ backgroundColor: '#ef4136' }}
-                  >
-                    {respondMutation.isPending ? (
-                      <RefreshCw size={24} className="animate-spin" />
-                    ) : (
-                      <Send size={24} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                    )}
-                  </button>
                 </div>
+
               </div>
               <p className="text-center mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-300">
                 Response usually arrives within 24 hours
