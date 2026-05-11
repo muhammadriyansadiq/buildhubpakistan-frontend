@@ -308,44 +308,36 @@ export default function BuyerQuotations({
                 {addresses && addresses.length > 0 ? (
                   <div className="space-y-3 mb-6">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Delivery Address</label>
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-4">
                       {addresses.map((addr) => (
-                        <div 
+                        <div
                           key={addr.id}
                           onClick={() => setOrderForm(prev => ({ ...prev, addressId: addr.id }))}
-                          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer group relative ${
-                            orderForm.addressId === addr.id 
-                              ? 'shadow-md shadow-red-100' 
-                              : 'border-slate-100 bg-slate-50 hover:border-slate-200'
+                          className={`bg-white rounded-2xl shadow-sm border-2 p-6 cursor-pointer transition-all ${
+                            orderForm.addressId === addr.id ? 'border-red-500 shadow-md' : 'border-gray-200'
                           }`}
-                          style={{ 
-                            borderColor: orderForm.addressId === addr.id ? '#ef4136' : undefined,
-                            backgroundColor: orderForm.addressId === addr.id ? '#fef2f2' : undefined 
-                          }}
+                          style={{ borderColor: orderForm.addressId === addr.id ? '#ef4136' : '#E2E8F0' }}
                         >
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-xl shrink-0 transition-colors ${
-                              orderForm.addressId === addr.id ? 'text-white' : 'bg-white text-slate-400 group-hover:text-slate-600 shadow-sm'
-                            }`}
-                            style={{ backgroundColor: orderForm.addressId === addr.id ? '#ef4136' : undefined }}
-                            >
-                              <MapPin size={18} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-sm text-slate-800">{addr.label}</span>
-                                {orderForm.addressId === addr.id && (
-                                  <span className="px-2 py-0.5 rounded-full text-[8px] font-black text-white uppercase tracking-tighter" style={{ backgroundColor: '#ef4136' }}>Selected</span>
-                                )}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-bold text-slate-800">{addr.label}</span>
                               </div>
-                              <p className="text-xs text-slate-600 font-medium truncate">{addr.streetAddress}</p>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                                {addr.city}, {addr.province} • {addr.postalCode}
+                              <p className="font-semibold text-slate-700 mb-1">{addr.fullName}</p>
+                              <p className="text-sm text-slate-500 mb-1">{addr.phone}</p>
+                              <p className="text-sm text-slate-400">
+                                {addr.streetAddress}, {addr.city}, {addr.province} {addr.postalCode}
                               </p>
                             </div>
+                            {orderForm.addressId === addr.id && (
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#ef4136' }}>
+                                <CheckCircle2 size={16} className="text-white" />
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
+
                       <button 
                         onClick={() => setIsAddressModalOpen(true)}
                         className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-bold text-xs hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/30 transition-all flex items-center justify-center gap-2 cursor-pointer"

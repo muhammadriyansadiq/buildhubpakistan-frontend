@@ -40,8 +40,10 @@ export interface Product {
   user?: {
     id: number;
     name?: string;
+    fullName?: string;
     shopName?: string;
     email?: string;
+    createdAt?: string;
   };
 }
 
