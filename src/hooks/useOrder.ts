@@ -17,20 +17,39 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
   totalAmount: string;
-  shippingAddress: string;
-  billingAddress: string;
+  addressId: number | null;
   orderStatus: string;
   paymentStatus: string;
   paymentMethod: string;
   transactionId: string;
-  createdAt: string;
+  userId: number;
+  quotationId: number | null;
+  sellerId: number | null;
+  paymentReceipt: string;
   vendorImage: string | null;
   items: OrderItem[];
+  address: {
+    id: number;
+    fullName: string;
+    phone: string;
+    email: string;
+    streetAddress: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    label: string;
+  } | null;
   user: {
+    id: number;
     fullName: string;
     email: string;
     phone: string;
+    shopName?: string | null;
+    logo?: string | null;
   };
   address?: {
     id: number;
@@ -53,12 +72,22 @@ export interface OrderStats {
   Cancelled: number;
 }
 
+export interface OrdersResponse {
+  statusCode: number;
+  data: Order[];
+  message: string;
+  success: boolean;
+  page: number;
+  total: number;
+  lastPage: number;
+}
+
 export const useOrders = (filters?: any) => {
-  return useQuery({
+  return useQuery<OrdersResponse>({
     queryKey: ['orders', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/orders', { params: filters });
-      return data; // Returns { data: Order[], total, page, lastPage }
+      return data;
     },
   });
 };
