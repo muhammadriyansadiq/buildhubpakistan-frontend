@@ -782,7 +782,7 @@ export default function VendorDashboard() {
                       setTempPriceRange(priceRange);
                       setIsFilterModalOpen(true);
                     }}
-                    className="px-4 py-2.5 rounded-xl border text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 transition-all"
+                    className="px-4 py-2.5 rounded-xl border text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 transition-all cursor-pointer"
                     style={{ borderColor: '#E2E8F0', color: '#64748B' }}
                   >
                     <Filter size={18} /> Filter
@@ -791,7 +791,7 @@ export default function VendorDashboard() {
 
                 <button
                   onClick={() => setActiveSection('add-product')}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
                   style={{ backgroundColor: '#ef4136' }}
                 >
                   <Plus size={16} /> Add Product
@@ -843,7 +843,7 @@ export default function VendorDashboard() {
                             setIsFilterModalOpen(false);
                             setCurrentPage(1);
                           }}
-                          className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50 transition-all"
+                          className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50 transition-all cursor-pointer"
                           style={{ borderColor: '#E2E8F0', color: '#64748B' }}
                         >
                           Clear Filters
@@ -854,7 +854,7 @@ export default function VendorDashboard() {
                             setIsFilterModalOpen(false);
                             setCurrentPage(1);
                           }}
-                          className="flex-1 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 shadow-lg shadow-orange-200 transition-all"
+                          className="flex-1 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90 shadow-lg shadow-orange-200 transition-all cursor-pointer"
                           style={{ backgroundColor: '#F97316' }}
                         >
                           Apply Filter
@@ -950,7 +950,7 @@ export default function VendorDashboard() {
                             {!searchQuery && filterCategory === 'All' && (
                               <button
                                 onClick={() => setActiveSection('add-product')}
-                                className="mt-2 px-6 py-2.5 rounded-xl text-white font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity"
+                                className="mt-2 px-6 py-2.5 rounded-xl text-white font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
                                 style={{ backgroundColor: '#ef4136' }}
                               >
                                 <Plus size={18} /> Add Your First Product
@@ -2254,8 +2254,16 @@ export default function VendorDashboard() {
                         </div>
 
                         <div className="bg-white p-8 rounded-[32px] border shadow-sm flex flex-col items-center justify-center text-center space-y-4" style={{ borderColor: '#E2E8F0' }}>
-                          <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center border-4 border-white shadow-xl">
-                            <User size={48} className="text-[#ef4136]" />
+                          <div className="w-32 h-32 rounded-full bg-orange-50 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
+                            {currentUserDetails?.logo ? (
+                              <img
+                                src={currentUserDetails.logo}
+                                alt="Logo"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User size={48} className="text-[#ef4136]" />
+                            )}
                           </div>
                           <div>
                             <h4 className="font-black text-xl text-[#0D2E5E]">{currentUserDetails?.fullName}</h4>
@@ -2294,34 +2302,36 @@ export default function VendorDashboard() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Account Type</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white p-4 rounded-2xl border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Account Type</p>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                <Tag size={20} />
+                              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Tag size={18} />
                               </div>
-                              <span className="font-bold text-[#0D2E5E] capitalize">{currentUserDetails?.accountType}</span>
+                              <span className="font-bold text-[#0D2E5E] text-sm capitalize">{currentUserDetails?.accountType}</span>
                             </div>
                           </div>
-                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Member Since</p>
+                          <div className="bg-white p-4 rounded-2xl border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Member Since</p>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                                <Calendar size={20} />
+                              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
+                                <Calendar size={18} />
                               </div>
-                              <span className="font-bold text-[#0D2E5E]">
+                              <span className="font-bold text-[#0D2E5E] text-sm">
                                 {new Date(currentUserDetails?.createdAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                               </span>
                             </div>
                           </div>
-                          <div className="bg-white p-6 rounded-[32px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Profile Status</p>
+                          <div className="bg-white p-4 rounded-2xl border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Profile Status</p>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                                <Zap size={20} />
+                              <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                                <Zap size={18} />
                               </div>
-                              <span className="font-bold text-[#0D2E5E]">100% Complete</span>
+                              <span className="font-bold text-[#0D2E5E] text-sm">
+                                {currentUserDetails?.isProfileComplete ? '100% Complete' : 'Profile Pending'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -2329,35 +2339,105 @@ export default function VendorDashboard() {
                     )}
 
                     {settingsTab === 'bank' && (
-                      <div className="bg-white p-10 rounded-[40px] border shadow-sm relative overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
-                        {/* Abstract Background Shape */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 rounded-full -mr-32 -mt-32 -z-10" />
+                      <div className="space-y-6">
+                        {/* Virtual Banking Card Preview */}
+                        <div className="relative overflow-hidden bg-[#0D2E5E] rounded-[40px] p-8 md:p-10 text-white shadow-2xl">
+                          {/* Decorative elements */}
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+                          <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full -ml-20 -mb-20 blur-2xl" />
 
-                        <div className="flex items-center justify-between mb-10">
-                          <div>
-                            <h3 className="text-2xl font-bold text-[#0D2E5E]">Banking Details</h3>
-                            <p className="text-sm text-gray-500 mt-1 font-medium">Information used for settlements and payments</p>
-                          </div>
-                          <div className="p-4 rounded-[20px] bg-blue-50 text-blue-600">
-                            <Building2 size={32} />
+                          <div className="relative flex flex-col md:flex-row justify-between gap-8">
+                            <div className="flex-1 space-y-10">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
+                                  <Building2 size={24} className="text-white/80" />
+                                </div>
+                                <div>
+                                  <p className="text-white/60 text-[10px] font-bold uppercase tracking-[2px]">Banking Profile</p>
+                                  <h3 className="text-xl font-bold">{currentUserDetails?.accountTitle || 'Direct Deposit'}</h3>
+                                </div>
+                              </div>
+
+                              <div className="space-y-6">
+                                <div>
+                                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-[2px] mb-2">Account Identification</p>
+                                  <div className="flex items-center gap-4">
+                                    <p className="text-lg md:text-2xl font-mono tracking-[4px] font-medium">
+                                      {currentUserDetails?.ibanNumber ?
+                                        currentUserDetails.ibanNumber.match(/.{1,4}/g)?.join(' ') :
+                                        '•••• •••• •••• ••••'
+                                      }
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-8 md:gap-12">
+                                  <div>
+                                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-[2px] mb-1">Account Title</p>
+                                    <p className="font-bold text-sm md:text-base">{currentUserDetails?.accountTitle || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-[2px] mb-1">Branch Code</p>
+                                    <p className="font-bold text-sm md:text-base">{currentUserDetails?.branchCode || 'N/A'}</p>
+                                  </div>
+                                  <div className="hidden lg:block">
+                                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-[2px] mb-1">Status</p>
+                                    <div className={`flex items-center gap-1.5 font-bold text-xs ${currentUserDetails?.isApproved === 'Approved' ? 'text-green-400' : 'text-orange-400'}`}>
+                                      {currentUserDetails?.isApproved === 'Approved' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                                      {currentUserDetails?.isApproved === 'Approved' ? 'VERIFIED' : 'PENDING'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex md:flex-col justify-between items-end">
+                              <div className="w-16 h-10 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-md border border-white/20">
+                                <span className="text-[8px] font-black tracking-widest opacity-40 uppercase">Secure</span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <p className="text-white/30 text-[9px] font-bold mb-1 uppercase">Vendor Network</p>
+                                <div className="text-2xl font-black italic tracking-tighter opacity-80">
+                                  B<span className="text-orange-500">HUB</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          {[
-                            { label: 'Account Title', value: currentUserDetails?.accountTitle, icon: User },
-                            { label: 'Bank Branch Code', value: currentUserDetails?.branchCode, icon: MapPin },
-                            { label: 'Account Number', value: currentUserDetails?.accountNumber, icon: CreditCard },
-                            { label: 'IBAN Number', value: currentUserDetails?.ibanNumber, icon: Globe },
-                          ].map((item, idx) => (
-                            <div key={idx} className="border-b pb-6" style={{ borderColor: '#F1F5F9' }}>
-                              <div className="flex items-center gap-2 mb-2 text-gray-400">
-                                {item.icon && <item.icon size={14} />}
-                                <span className="text-[10px] font-medium uppercase tracking-[1px]">{item.label}</span>
-                              </div>
-                              <p className="text-lg font-bold text-[#0D2E5E] tracking-tight">{item.value || 'Not provided'}</p>
+                        {/* Detailed Information Grid */}
+                        <div className="bg-white p-8 md:p-10 rounded-[40px] border shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+                          <div className="flex items-center gap-4 mb-10">
+                            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                              <CreditCard size={20} />
                             </div>
-                          ))}
+                            <div>
+                              <h4 className="text-lg font-bold text-[#0D2E5E]">Bank Details Summary</h4>
+                              <p className="text-xs text-gray-400 font-medium tracking-wide">Detailed view of your registered banking credentials</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                            {[
+                              { label: 'Beneficiary Name', value: currentUserDetails?.accountTitle, icon: User, color: 'text-blue-500' },
+                              { label: 'Banking Branch / Code', value: currentUserDetails?.branchCode, icon: MapPin, color: 'text-orange-500' },
+                              { label: 'Account Number', value: currentUserDetails?.accountNumber, icon: CreditCard, color: 'text-purple-500' },
+                              { label: 'International Format (IBAN)', value: currentUserDetails?.ibanNumber, icon: Globe, color: 'text-green-500' },
+                            ].map((item, idx) => (
+                              <div key={idx} className="group">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className={`p-1.5 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform ${item.color}`}>
+                                    <item.icon size={14} />
+                                  </div>
+                                  <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-400 uppercase">{item.label}</span>
+                                </div>
+                                <div className="relative">
+                                  <p className="text-base font-bold text-[#0D2E5E] leading-snug">{item.value || 'Not provided'}</p>
+                                  <div className="absolute -bottom-2 left-0 w-0 h-[2px] bg-orange-500 group-hover:w-full transition-all duration-300" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
