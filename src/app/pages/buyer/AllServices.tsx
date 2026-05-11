@@ -269,36 +269,41 @@ export default function AllServices() {
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredServices.map((service) => (
-                  <div key={service.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer" style={{ borderColor: '#E2E8F0' }}>
-                    <div className="relative" style={{ height: '160px' }}>
-                      <img src={service.img} alt={service.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#10B981' }}>
-                        {service.badge}
-                      </span>
-                      <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm">
-                        <MapPin size={12} style={{ color: '#64748B' }} />
-                        <span className="text-xs font-medium" style={{ color: '#3e3e3e' }}>{service.location}</span>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold mb-1" style={{ color: '#1E293B' }}>{service.name}</h3>
-                      <p className="text-xs mb-3" style={{ color: '#64748B' }}>by {service.provider}</p>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-1">
-                          <Star size={14} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
-                          <span className="text-sm font-semibold" style={{ color: '#F59E0B' }}>{service.rating}</span>
+                    <div 
+                      key={service.id} 
+                      onClick={() => router.push(`/services/${service.id}`)}
+                      className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group" 
+                      style={{ borderColor: '#E2E8F0' }}
+                    >
+                      <div className="relative" style={{ height: '160px' }}>
+                        <img src={service.img} alt={service.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
+                          {service.badge}
+                        </span>
+                        <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm">
+                          <MapPin size={12} style={{ color: '#64748B' }} />
+                          <span className="text-xs font-medium" style={{ color: '#3e3e3e' }}>{service.location}</span>
                         </div>
-                        <span className="text-sm font-bold" style={{ color: '#10B981' }}>{service.price}</span>
                       </div>
-                      <button
-                        className="w-full py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: '#10B981' }}
-                      >
-                        Request Quote
-                      </button>
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-1" style={{ color: '#1E293B' }}>{service.name}</h3>
+                        <p className="text-xs mb-3" style={{ color: '#64748B' }}>by {service.provider}</p>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1">
+                            <Star size={14} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
+                            <span className="text-sm font-semibold" style={{ color: '#F59E0B' }}>{service.rating}</span>
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: '#ef4136' }}>{service.price}</span>
+                        </div>
+                        <button
+                          className="w-full py-2 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: '#ef4136' }}
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </div>
-                  </div>
                 ))}
               </div>
             ) : (
@@ -306,12 +311,13 @@ export default function AllServices() {
                 {filteredServices.map((service) => (
                   <div
                     key={service.id}
-                    className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer flex"
+                    onClick={() => router.push(`/services/${service.id}`)}
+                    className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer flex group"
                     style={{ borderColor: '#E2E8F0' }}
                   >
                     <div className="relative w-64 flex-shrink-0">
-                      <img src={service.img} alt={service.name} className="w-full h-full object-cover" />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#10B981' }}>
+                      <img src={service.img} alt={service.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
                         {service.badge}
                       </span>
                     </div>
@@ -331,12 +337,12 @@ export default function AllServices() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold" style={{ color: '#10B981' }}>{service.price}</span>
+                        <span className="text-lg font-bold" style={{ color: '#ef4136' }}>{service.price}</span>
                         <button
                           className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                          style={{ backgroundColor: '#10B981' }}
+                          style={{ backgroundColor: '#ef4136' }}
                         >
-                          Request Quote
+                          View Details
                         </button>
                       </div>
                     </div>

@@ -6,9 +6,9 @@ import {
   ChevronRight, ChevronLeft, Star, ShoppingCart, Heart, Zap,
   Wrench, CheckCircle2, ArrowRight, Flame, Clock, Truck, Shield, RefreshCw
 } from 'lucide-react';
-import { useProducts } from '@/hooks/useProduct';
+import { useProducts, useCategories } from '@/hooks/useProduct';
 import { useAddToCartMutation } from '@/hooks/useCart';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const banners = [
@@ -41,64 +41,7 @@ const banners = [
   },
 ];
 
-const categories = [
-  {
-    id: 'cement-concrete',
-    name: 'Cement & Concrete',
-    count: '2.4K+ products',
-    img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=400&h=300&fit=crop',
-    description: 'All types of cement and concrete materials'
-  },
-  {
-    id: 'steel-metal',
-    name: 'Steel & Metal',
-    count: '1.8K+ products',
-    img: 'https://images.unsplash.com/photo-1761479867761-7a8b11f54449?w=400&h=300&fit=crop',
-    description: 'TMT bars, angle iron, sheets & more'
-  },
-  {
-    id: 'tiles-flooring',
-    name: 'Tiles & Flooring',
-    count: '3.2K+ products',
-    img: 'https://images.unsplash.com/photo-1695191388218-f6259600223f?w=400&h=300&fit=crop',
-    description: 'Floor, wall, and decorative tiles'
-  },
-  {
-    id: 'paints-coatings',
-    name: 'Paints & Coatings',
-    count: '980+ products',
-    img: 'https://images.unsplash.com/photo-1698216543278-c382147e9fbf?w=400&h=300&fit=crop',
-    description: 'Interior & exterior paints'
-  },
-  {
-    id: 'plumbing',
-    name: 'Plumbing',
-    count: '1.1K+ products',
-    img: 'https://images.unsplash.com/photo-1556995378-e0a5c979ec57?w=400&h=300&fit=crop',
-    description: 'Pipes, fittings, and fixtures'
-  },
-  {
-    id: 'electrical',
-    name: 'Electrical',
-    count: '760+ products',
-    img: 'https://images.unsplash.com/photo-1684543327925-ca57d94843d6?w=400&h=300&fit=crop',
-    description: 'Wires, switches, and electrical supplies'
-  },
-  {
-    id: 'tools-hardware',
-    name: 'Tools & Hardware',
-    count: '540+ products',
-    img: 'https://images.unsplash.com/photo-1770763233593-74dfd0da7bf0?w=400&h=300&fit=crop',
-    description: 'Power tools and hand tools'
-  },
-  {
-    id: 'services',
-    name: 'Professional Services',
-    count: '200+ providers',
-    img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=400&h=300&fit=crop',
-    description: 'Engineers, architects & labor'
-  },
-];
+// Categories will be fetched from API
 
 // Mock services and brands remain as fallback or static info
 
@@ -114,14 +57,14 @@ const services = [
 ];
 
 const brands = [
-  { name: 'Bestway', cat: 'Cement', products: '2.4K+', color: '#FFA726', bgColor: '#FFF3E0' },
-  { name: 'Lucky', cat: 'Cement', products: '1.8K+', color: '#26A69A', bgColor: '#E0F2F1' },
-  { name: 'Ittefaq', cat: 'Steel', products: '1.2K+', color: '#5C6BC0', bgColor: '#E8EAF6' },
-  { name: 'ICI Dulux', cat: 'Paints', products: '980+', color: '#AB47BC', bgColor: '#F3E5F5' },
-  { name: 'Master Tiles', cat: 'Tiles', products: '3.2K+', color: '#42A5F5', bgColor: '#E3F2FD' },
-  { name: 'Prince', cat: 'Plumbing', products: '1.1K+', color: '#66BB6A', bgColor: '#E8F5E9' },
-  { name: 'Bosch', cat: 'Tools', products: '540+', color: '#EF5350', bgColor: '#FFEBEE' },
-  { name: 'ABB', cat: 'Electrical', products: '760+', color: '#FFA726', bgColor: '#FFF3E0' },
+  { name: 'Bestway', cat: 'Cement', color: '#1a4f8b', logo: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=100&h=100&fit=crop' },
+  { name: 'Lucky', cat: 'Cement', color: '#008374', logo: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?q=80&w=100&h=100&fit=crop' },
+  { name: 'Ittefaq', cat: 'Steel', color: '#1e293b', logo: 'https://images.unsplash.com/photo-1516156008625-3a9d60677518?q=80&w=100&h=100&fit=crop' },
+  { name: 'ICI Dulux', cat: 'Paints', color: '#e11d48', logo: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?q=80&w=100&h=100&fit=crop' },
+  { name: 'Master', cat: 'Tiles', color: '#2563eb', logo: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=100&h=100&fit=crop' },
+  { name: 'Prince', cat: 'Pipes', color: '#16a34a', logo: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=100&h=100&fit=crop' },
+  { name: 'Bosch', cat: 'Tools', color: '#dc2626', logo: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=100&h=100&fit=crop' },
+  { name: 'ABB', cat: 'Electric', color: '#ea580c', logo: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=100&h=100&fit=crop' },
 ];
 
 export default function BuyerHome() {
@@ -129,7 +72,9 @@ export default function BuyerHome() {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const { data: productsData, isLoading: productsLoading } = useProducts();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const products = Array.isArray(productsData) ? productsData : [];
+  const categoriesList = Array.isArray(categoriesData) ? categoriesData.slice(0, 10) : [];
 
   const { mutateAsync: addToCart } = useAddToCartMutation();
   const [addingProductId, setAddingProductId] = useState<number | null>(null);
@@ -246,40 +191,57 @@ export default function BuyerHome() {
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => router.push(`/category/${cat.id}`)}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm border hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-left"
-                style={{ borderColor: '#E2E8F0' }}
-              >
-                <div className="relative overflow-hidden" style={{ height: '140px' }}>
-                  <img
-                    src={cat.img}
-                    alt={cat.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
-                        <ChevronRight size={14} className="text-white group-hover:translate-x-0.5 transition-transform" />
+            {categoriesLoading ? (
+              Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl h-48 animate-pulse border shadow-sm" style={{ borderColor: '#E2E8F0' }} />
+              ))
+            ) : categoriesList.length > 0 ? (
+              categoriesList.map((cat: any) => (
+                <button
+                  key={cat.id}
+                  onClick={() => router.push(`/category/${cat.id}`)}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-sm border hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-left"
+                  style={{ borderColor: '#E2E8F0' }}
+                >
+                  <div className="relative overflow-hidden" style={{ height: '140px' }}>
+                    {cat.image ? (
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2">
+                        <ImageIcon size={32} />
+                        <span className="text-[10px] font-medium uppercase tracking-wider">No Image</span>
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
+                          <ChevronRight size={14} className="text-white group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                      <h3 className="text-white font-bold text-sm leading-tight line-clamp-1">{cat.title}</h3>
                     </div>
-                    <h3 className="text-white font-bold text-sm leading-tight">{cat.name}</h3>
                   </div>
-                </div>
-                <div className="p-3 bg-white">
-                  <p className="text-xs mb-1" style={{ color: '#64748B' }}>{cat.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>{cat.count}</span>
-                    <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#3e3e3e' }}>
-                      Browse →
-                    </span>
+                  <div className="p-3 bg-white">
+                    <p className="text-[11px] mb-1 line-clamp-2 h-8" style={{ color: '#64748B' }}>
+                      {cat.description || 'Quality products in this category'}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>Explore</span>
+                      <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#3e3e3e' }}>
+                        Browse →
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            ) : (
+              <div className="col-span-full py-8 text-center text-gray-500">No categories found</div>
+            )}
           </div>
         </section>
 
@@ -414,11 +376,16 @@ export default function BuyerHome() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {services.map((service) => (
-              <div key={service.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer" style={{ borderColor: '#E2E8F0' }}>
+              <div 
+                key={service.id} 
+                onClick={() => router.push(`/services/${service.id}`)}
+                className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer group" 
+                style={{ borderColor: '#E2E8F0' }}
+              >
                 <div className="relative" style={{ height: '120px' }}>
-                  <img src={service.img} alt={service.name} className="w-full h-full object-cover" />
+                  <img src={service.img} alt={service.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#10B981' }}>
+                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
                     {service.badge}
                   </span>
                 </div>
@@ -429,7 +396,7 @@ export default function BuyerHome() {
                     <span className="text-xs flex items-center gap-1" style={{ color: '#F59E0B' }}>
                       <Star size={11} style={{ fill: '#F59E0B' }} /> {service.rating}
                     </span>
-                    <span className="text-xs font-semibold" style={{ color: '#10B981' }}>{service.price}</span>
+                    <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>{service.price}</span>
                   </div>
                 </div>
               </div>
@@ -449,69 +416,42 @@ export default function BuyerHome() {
             </button>
           </div>
 
-          <div className="flex items-center gap-6 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-4 lg:gap-6">
             {brands.map((brand) => (
               <div
                 key={brand.name}
-                className="group flex-shrink-0 cursor-pointer"
+                className="group flex flex-col items-center gap-2 cursor-pointer"
               >
-                <div className="relative">
-                  {/* Brand Logo Card */}
-                  <div
-                    className="w-40 h-28 rounded-2xl flex flex-col items-center justify-center p-4 border-2 hover:border-transparent shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
-                    style={{ borderColor: '#E2E8F0', backgroundColor: 'white' }}
+                <div
+                  className="w-full aspect-square rounded-2xl flex items-center justify-center p-4 border-2 hover:border-transparent shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden bg-white"
+                  style={{ borderColor: '#F1F5F9' }}
+                >
+                  {/* Brand Visual */}
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md z-10 group-hover:scale-110 transition-transform duration-300"
+                    style={{ backgroundColor: brand.color }}
                   >
-                    {/* Gradient background on hover */}
-                    <div
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      style={{
-                        background: `linear-gradient(135deg, ${brand.bgColor} 0%, white 100%)`
-                      }}
-                    />
-
-                    {/* Logo */}
-                    <div className="relative z-10 flex flex-col items-center gap-2">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
-                        style={{ backgroundColor: brand.color }}
-                      >
-                        <span className="text-white font-bold text-lg">
-                          {brand.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold text-sm" style={{ color: '#3e3e3e' }}>{brand.name}</p>
-                        <p className="text-xs" style={{ color: '#94A3B8' }}>{brand.cat}</p>
-                      </div>
-                    </div>
-
-                    {/* Decorative circle */}
-                    <div
-                      className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
-                      style={{ backgroundColor: brand.color }}
-                    />
+                    {brand.name.charAt(0)}
                   </div>
-
-                  {/* Product count badge */}
-                  <div
-                    className="absolute -top-2 -right-2 px-2 py-1 rounded-lg text-xs font-bold shadow-md"
-                    style={{ backgroundColor: brand.color, color: 'white' }}
-                  >
-                    {brand.products}
-                  </div>
+                  
+                  {/* Subtle Context Image */}
+                  <img 
+                    src={brand.logo} 
+                    alt={brand.name} 
+                    className="absolute inset-0 w-full h-full object-cover opacity-5 group-hover:opacity-10 transition-opacity"
+                  />
+                  
+                  {/* Hover Overlay */}
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
+                    style={{ backgroundColor: brand.color }}
+                  />
+                </div>
+                <div className="text-center overflow-hidden w-full">
+                  <p className="font-bold text-[11px] truncate" style={{ color: '#334155' }}>{brand.name}</p>
+                  <p className="text-[9px] uppercase tracking-wider font-semibold opacity-60" style={{ color: brand.color }}>{brand.cat}</p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Navigation hint */}
-          <div className="flex items-center justify-center gap-2 mt-4">
-            {brands.slice(0, 4).map((_, idx) => (
-              <div
-                key={idx}
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: idx === 0 ? '#ef4136' : '#E2E8F0' }}
-              />
             ))}
           </div>
         </section>

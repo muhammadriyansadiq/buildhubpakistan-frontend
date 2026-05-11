@@ -4,92 +4,101 @@ import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, SlidersHorizontal, ChevronDown, Star, Heart, ShoppingCart,
-  Grid3x3, List, X
+  Grid3x3, List, X, Search, Loader2
 } from 'lucide-react';
+import { useProducts, useCategories, Product, Category } from '@/hooks/useProduct';
+import { useAddToCartMutation } from '@/hooks/useCart';
+import { toast } from 'sonner';
 
-const categoryData: Record<string, any> = {
-  'cement-concrete': {
-    name: 'Cement & Concrete',
-    description: 'High-quality cement and concrete products for all construction needs',
-    subcategories: ['OPC Cement', 'PPC Cement', 'White Cement', 'Concrete Mix', 'Ready Mix'],
-    brands: ['Bestway', 'Lucky', 'Maple Leaf', 'Fauji', 'Askari', 'DG Khan'],
-  },
-};
-
-const products = [
-  { id: 1, name: 'OPC Cement 50kg', brand: 'Bestway', price: 1200, originalPrice: 1400, rating: 4.5, reviews: 234, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Best Seller', vendor: 'Ahmed Materials', subcategory: 'OPC Cement' },
-  { id: 2, name: 'PPC Cement 50kg', brand: 'Lucky', price: 1150, originalPrice: 1300, rating: 4.4, reviews: 189, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Popular', vendor: 'Build Mart', subcategory: 'PPC Cement' },
-  { id: 3, name: 'White Cement 40kg', brand: 'Maple Leaf', price: 2400, originalPrice: 2700, rating: 4.6, reviews: 156, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Premium', vendor: 'Premium Supplies', subcategory: 'White Cement' },
-  { id: 4, name: 'OPC Cement 50kg', brand: 'Fauji', price: 1180, originalPrice: 1350, rating: 4.3, reviews: 198, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Hot Deal', vendor: 'Construction Hub', subcategory: 'OPC Cement' },
-  { id: 5, name: 'Ready Mix Concrete M20', brand: 'Bestway', price: 8500, originalPrice: 9200, rating: 4.7, reviews: 87, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Trending', vendor: 'Concrete Pro', subcategory: 'Ready Mix' },
-  { id: 6, name: 'PPC Cement 50kg', brand: 'DG Khan', price: 1130, originalPrice: 1280, rating: 4.2, reviews: 167, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Value', vendor: 'Smart Build', subcategory: 'PPC Cement' },
-  { id: 7, name: 'OPC Cement 50kg', brand: 'Askari', price: 1220, originalPrice: 1420, rating: 4.4, reviews: 201, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Quality', vendor: 'Elite Materials', subcategory: 'OPC Cement' },
-  { id: 8, name: 'Concrete Mix 50kg', brand: 'Lucky', price: 950, originalPrice: 1100, rating: 4.1, reviews: 134, img: 'https://images.unsplash.com/photo-1730627283177-f43b83c3850c?w=300&h=280&fit=crop', badge: 'Budget', vendor: 'Budget Builders', subcategory: 'Concrete Mix' },
-];
+const MIN_PRICE = 0;
+const MAX_PRICE = 100000;
 
 export default function CategoryPage() {
   const router = useRouter();
   const params = useParams();
-  const categoryId = params?.categoryId as string;
+  const categoryId = params?.categoryId ? parseInt(params.categoryId as string) : null;
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter states
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [priceRange, setPriceRange] = useState({ min: MIN_PRICE, max: MAX_PRICE });
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState('popular');
 
-  const category = categoryData[categoryId || 'cement-concrete'] || categoryData['cement-concrete'];
+  // Add to cart mutation
+  const { mutateAsync: addToCart } = useAddToCartMutation();
+  const [addingProductId, setAddingProductId] = useState<number | null>(null);
+
+  // Fetch Category Details
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+  const currentCategory = Array.isArray(categoriesData) 
+    ? categoriesData.find(c => c.id === categoryId) 
+    : null;
+
+  // Fetch Products
+  const { data: productsData, isLoading: productsLoading } = useProducts({
+    categoryId: categoryId || undefined,
+    minPrice: priceRange.min,
+    maxPrice: priceRange.max,
+    page: 1,
+    limit: 50,
+  });
+  const products = Array.isArray(productsData) ? productsData : [];
 
   const toggleWishlist = (id: number) => {
     setWishlist((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
   };
 
-  const toggleFilter = (value: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
-    setter((prev) => prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]);
+  const handleAddToCart = async (e: React.MouseEvent, productId: number) => {
+    e.stopPropagation();
+    setAddingProductId(productId);
+    try {
+      await addToCart({ productId, quantity: 1 });
+      toast.success('Product added to cart');
+    } catch (error) {
+      // Handled by client
+    } finally {
+      setAddingProductId(null);
+    }
   };
 
   const discount = (orig: number, curr: number) => Math.round((1 - curr / orig) * 100);
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    if (selectedSubcategories.length > 0 && !selectedSubcategories.includes(product.subcategory)) return false;
-    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
-    if (priceRange.min && product.price < parseInt(priceRange.min)) return false;
-    if (priceRange.max && product.price > parseInt(priceRange.max)) return false;
-    if (minRating > 0 && product.rating < minRating) return false;
-    return true;
-  });
+  const handlePriceChange = (type: 'min' | 'max', value: number) => {
+    if (type === 'min') {
+      setPriceRange({ min: Math.min(value, priceRange.max), max: priceRange.max });
+    } else {
+      setPriceRange({ min: priceRange.min, max: Math.max(value, priceRange.min) });
+    }
+  };
 
-  const activeFiltersCount = selectedSubcategories.length + selectedBrands.length +
-    (priceRange.min ? 1 : 0) + (priceRange.max ? 1 : 0) + (minRating > 0 ? 1 : 0);
+  const activeFiltersCount = (priceRange.min > MIN_PRICE ? 1 : 0) + 
+    (priceRange.max < MAX_PRICE ? 1 : 0) + (minRating > 0 ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b" style={{ borderColor: '#E2E8F0' }}>
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <button
             onClick={() => router.push('/categories')}
-            className="flex items-center gap-2 mb-4 text-sm font-medium hover:gap-3 transition-all"
+            className="flex items-center gap-1.5 mb-6 text-sm font-semibold transition-all hover:-translate-x-1"
             style={{ color: '#ef4136' }}
           >
             <ArrowLeft size={16} /> Back to All Categories
           </button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="font-bold text-3xl mb-2" style={{ color: '#3e3e3e' }}>
-                {category.name}
-              </h1>
-              <p className="text-sm mb-3" style={{ color: '#94A3B8' }}>
-                {category.description}
-              </p>
-              <p className="text-sm font-medium" style={{ color: '#64748B' }}>
-                {filteredProducts.length} products available
-              </p>
+          <div className="flex flex-col gap-2">
+            <h1 className="font-bold text-4xl tracking-tight" style={{ color: '#1E293B' }}>
+              {currentCategory?.title || 'Loading category...'}
+            </h1>
+            <p className="text-gray-500 max-w-2xl leading-relaxed">
+              {currentCategory?.description || 'Discover our extensive collection of high-quality products.'}
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200 shadow-sm">
+                {products.length} products available
+              </span>
             </div>
           </div>
         </div>
@@ -106,9 +115,7 @@ export default function CategoryPage() {
                   {activeFiltersCount > 0 && (
                     <button
                       onClick={() => {
-                        setSelectedSubcategories([]);
-                        setSelectedBrands([]);
-                        setPriceRange({ min: '', max: '' });
+                        setPriceRange({ min: MIN_PRICE, max: MAX_PRICE });
                         setMinRating(0);
                       }}
                       className="text-xs font-medium"
@@ -122,70 +129,51 @@ export default function CategoryPage() {
 
               <div className="p-4 space-y-6">
                 {/* Price Range */}
-                <div>
+                 <div>
                   <h4 className="font-semibold text-sm mb-3" style={{ color: '#3e3e3e' }}>
-                    Price Range (Rs.)
+                    Price Range
                   </h4>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      value={priceRange.min}
-                      onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                      className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none"
-                      style={{ borderColor: '#E2E8F0' }}
-                    />
-                    <span style={{ color: '#94A3B8' }}>-</span>
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      value={priceRange.max}
-                      onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                      className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none"
-                      style={{ borderColor: '#E2E8F0' }}
-                    />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span style={{ color: '#64748B' }}>Rs. {priceRange.min.toLocaleString()}</span>
+                      <span style={{ color: '#64748B' }}>Rs. {priceRange.max.toLocaleString()}</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider font-bold mb-1 block" style={{ color: '#94A3B8' }}>Min Price</label>
+                        <input
+                          type="range"
+                          min={MIN_PRICE}
+                          max={MAX_PRICE}
+                          step={100}
+                          value={priceRange.min}
+                          onChange={(e) => handlePriceChange('min', parseInt(e.target.value))}
+                          className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-red-500"
+                          style={{
+                            background: `linear-gradient(to right, #ef4136 0%, #ef4136 ${(priceRange.min / MAX_PRICE) * 100}%, #E2E8F0 ${(priceRange.min / MAX_PRICE) * 100}%, #E2E8F0 100%)`
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider font-bold mb-1 block" style={{ color: '#94A3B8' }}>Max Price</label>
+                        <input
+                          type="range"
+                          min={MIN_PRICE}
+                          max={MAX_PRICE}
+                          step={100}
+                          value={priceRange.max}
+                          onChange={(e) => handlePriceChange('max', parseInt(e.target.value))}
+                          className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-red-500"
+                          style={{
+                            background: `linear-gradient(to right, #ef4136 0%, #ef4136 ${(priceRange.max / MAX_PRICE) * 100}%, #E2E8F0 ${(priceRange.max / MAX_PRICE) * 100}%, #E2E8F0 100%)`
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Subcategories */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-3" style={{ color: '#3e3e3e' }}>
-                    Type
-                  </h4>
-                  <div className="space-y-2">
-                    {category.subcategories.map((sub: string) => (
-                      <label key={sub} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedSubcategories.includes(sub)}
-                          onChange={() => toggleFilter(sub, setSelectedSubcategories)}
-                          className="w-4 h-4 rounded accent-red-500"
-                        />
-                        <span className="text-sm" style={{ color: '#64748B' }}>{sub}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Brands */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-3" style={{ color: '#3e3e3e' }}>
-                    Brands
-                  </h4>
-                  <div className="space-y-2">
-                    {category.brands.map((brand: string) => (
-                      <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => toggleFilter(brand, setSelectedBrands)}
-                          className="w-4 h-4 rounded accent-red-500"
-                        />
-                        <span className="text-sm" style={{ color: '#64748B' }}>{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Rating */}
                 <div>
@@ -308,128 +296,157 @@ export default function CategoryPage() {
             )}
 
             {/* Products Grid/List */}
-            {viewMode === 'grid' ? (
+            {productsLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group"
-                    style={{ borderColor: '#E2E8F0' }}
-                  >
-                    <div className="relative" style={{ height: '180px' }}>
-                      <img
-                        src={product.img}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        onClick={() => router.push(`/product/${product.id}`)}
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
-                        {product.badge}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
-                          -{discount(product.originalPrice, product.price)}%
-                        </span>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
-                        className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition-transform"
-                      >
-                        <Heart
-                          size={16}
-                          style={{
-                            fill: wishlist.includes(product.id) ? '#EF4444' : 'none',
-                            color: wishlist.includes(product.id) ? '#EF4444' : '#64748B',
-                          }}
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl h-72 animate-pulse border shadow-sm" style={{ borderColor: '#E2E8F0' }} />
+                ))}
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {products.map((product: Product) => {
+                  const currentPrice = Number(product.price);
+                  const originalPrice = product.retail ? Number(product.retail) : currentPrice;
+                  const showDiscount = originalPrice > currentPrice;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group"
+                      style={{ borderColor: '#E2E8F0' }}
+                    >
+                      <div className="relative" style={{ height: '180px' }}>
+                        <img
+                          src={product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/300x280?text=No+Image'}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                          onClick={() => router.push(`/product/${product.id}`)}
                         />
-                      </button>
-                    </div>
-                    <div className="p-3" onClick={() => router.push(`/product/${product.id}`)}>
-                      <p className="text-xs mb-0.5" style={{ color: '#94A3B8' }}>{product.brand}</p>
-                      <p className="text-sm font-semibold leading-tight mb-2" style={{ color: '#1E293B' }}>{product.name}</p>
-                      <div className="flex items-center gap-1 mb-2">
-                        <Star size={12} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
-                        <span style={{ color: '#64748B', fontSize: '11px' }}>{product.rating}</span>
-                        <span style={{ color: '#CBD5E1', fontSize: '11px' }}>({product.reviews})</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '14px' }}>Rs. {product.price.toLocaleString()}</span>
-                          <div style={{ color: '#94A3B8', fontSize: '11px', textDecoration: 'line-through' }}>
-                            Rs. {product.originalPrice.toLocaleString()}
-                          </div>
-                        </div>
+                        {product.stockStatus === 'In Stock' && (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
+                            {product.stockStatus}
+                          </span>
+                        )}
+                        {showDiscount && (
+                          <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>
+                            -{discount(originalPrice, currentPrice)}%
+                          </span>
+                        )}
                         <button
-                          onClick={(e) => { e.stopPropagation(); }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity"
-                          style={{ backgroundColor: '#ef4136' }}
+                          onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
+                          className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition-transform"
                         >
-                          <ShoppingCart size={14} />
+                          <Heart
+                            size={16}
+                            style={{
+                              fill: wishlist.includes(product.id) ? '#EF4444' : 'none',
+                              color: wishlist.includes(product.id) ? '#EF4444' : '#64748B',
+                            }}
+                          />
                         </button>
                       </div>
+                      <div className="p-3" onClick={() => router.push(`/product/${product.id}`)}>
+                        <p className="text-xs mb-0.5" style={{ color: '#94A3B8' }}>{product.brand || 'No Brand'}</p>
+                        <p className="text-sm font-semibold leading-tight mb-2 h-10 line-clamp-2" style={{ color: '#1E293B' }}>{product.title}</p>
+                        <div className="flex items-center gap-1 mb-2">
+                          <Star size={12} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
+                          <span style={{ color: '#64748B', fontSize: '11px' }}>4.5</span>
+                          <span style={{ color: '#CBD5E1', fontSize: '11px' }}>(120)</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '14px' }}>Rs. {currentPrice.toLocaleString()}</span>
+                            {showDiscount && (
+                              <div style={{ color: '#94A3B8', fontSize: '11px', textDecoration: 'line-through' }}>
+                                Rs. {originalPrice.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => handleAddToCart(e, product.id)}
+                            disabled={addingProductId === product.id}
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                            style={{ backgroundColor: '#ef4136' }}
+                          >
+                            {addingProductId === product.id ? <Loader2 size={14} className="animate-spin" /> : <ShoppingCart size={14} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer flex"
-                    style={{ borderColor: '#E2E8F0' }}
-                    onClick={() => router.push(`/product/${product.id}`)}
-                  >
-                    <div className="relative w-48 flex-shrink-0">
-                      <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
-                        {product.badge}
-                      </span>
-                    </div>
-                    <div className="flex-1 p-4 flex flex-col justify-between">
-                      <div>
-                        <p className="text-xs mb-1" style={{ color: '#94A3B8' }}>{product.brand}</p>
-                        <h3 className="font-bold text-lg mb-2" style={{ color: '#3e3e3e' }}>{product.name}</h3>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex items-center gap-1">
-                            <Star size={14} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
-                            <span style={{ color: '#64748B', fontSize: '13px' }}>{product.rating} ({product.reviews} reviews)</span>
+                {products.map((product: Product) => {
+                  const currentPrice = Number(product.price);
+                  const originalPrice = product.retail ? Number(product.retail) : currentPrice;
+                  const showDiscount = originalPrice > currentPrice;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer flex"
+                      style={{ borderColor: '#E2E8F0' }}
+                      onClick={() => router.push(`/product/${product.id}`)}
+                    >
+                      <div className="relative w-48 flex-shrink-0">
+                        <img src={product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/300x280?text=No+Image'} alt={product.title} className="w-full h-full object-cover" />
+                        {product.stockStatus === 'In Stock' && (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
+                            {product.stockStatus}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col justify-between">
+                        <div>
+                          <p className="text-xs mb-1" style={{ color: '#94A3B8' }}>{product.brand || 'No Brand'}</p>
+                          <h3 className="font-bold text-lg mb-2" style={{ color: '#3e3e3e' }}>{product.title}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-1">
+                              <Star size={14} style={{ color: '#F59E0B', fill: '#F59E0B' }} />
+                              <span style={{ color: '#64748B', fontSize: '13px' }}>4.5 (120 reviews)</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-bold text-xl" style={{ color: '#3e3e3e' }}>Rs. {product.price.toLocaleString()}</span>
-                          <span className="ml-2 text-sm" style={{ color: '#94A3B8', textDecoration: 'line-through' }}>
-                            Rs. {product.originalPrice.toLocaleString()}
-                          </span>
-                          <span className="ml-2 text-sm font-bold" style={{ color: '#166534' }}>
-                            {discount(product.originalPrice, product.price)}% OFF
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold text-xl" style={{ color: '#3e3e3e' }}>Rs. {currentPrice.toLocaleString()}</span>
+                            {showDiscount && (
+                              <>
+                                <span className="ml-2 text-sm" style={{ color: '#94A3B8', textDecoration: 'line-through' }}>
+                                  Rs. {originalPrice.toLocaleString()}
+                                </span>
+                                <span className="ml-2 text-sm font-bold" style={{ color: '#166534' }}>
+                                  {discount(originalPrice, currentPrice)}% OFF
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => handleAddToCart(e, product.id)}
+                            disabled={addingProductId === product.id}
+                            className="px-6 py-3 rounded-xl flex items-center gap-2 text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                            style={{ backgroundColor: '#ef4136' }}
+                          >
+                            {addingProductId === product.id ? <Loader2 size={18} className="animate-spin" /> : <ShoppingCart size={18} />}
+                            {addingProductId === product.id ? 'Adding...' : 'Add to Cart'}
+                          </button>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); }}
-                          className="px-6 py-3 rounded-xl flex items-center gap-2 text-white font-semibold hover:opacity-90 transition-opacity"
-                          style={{ backgroundColor: '#ef4136' }}
-                        >
-                          <ShoppingCart size={18} /> Add to Cart
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {filteredProducts.length === 0 && (
+            {!productsLoading && products.length === 0 && (
               <div className="bg-white rounded-2xl shadow-sm border p-12 text-center" style={{ borderColor: '#E2E8F0' }}>
                 <p className="text-lg font-semibold mb-2" style={{ color: '#3e3e3e' }}>No products found</p>
                 <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>Try adjusting your filters to see more results</p>
                 <button
                   onClick={() => {
-                    setSelectedSubcategories([]);
-                    setSelectedBrands([]);
-                    setPriceRange({ min: '', max: '' });
+                    setPriceRange({ min: MIN_PRICE, max: MAX_PRICE });
                     setMinRating(0);
                   }}
                   className="px-6 py-2 rounded-lg font-semibold text-white"
