@@ -38,6 +38,8 @@ export default function LoginPage() {
     setIsCheckingAuth(false);
   }, [router]);
 
+  const { mutateAsync: loginMutation, isPending: isLoading } = useLoginMutation();
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -48,8 +50,6 @@ export default function LoginPage() {
       </div>
     );
   }
-
-  const { mutateAsync: loginMutation, isPending: isLoading } = useLoginMutation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

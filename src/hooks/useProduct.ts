@@ -23,6 +23,7 @@ export interface Product {
   wholesale?: number;
   bulkb2b?: number;
   productStatus?: string;
+  status?: string;
   color?: string;
   size?: string;
   thickness?: string;
@@ -36,6 +37,12 @@ export interface Product {
     name?: string;
     title?: string;
   };
+  user?: {
+    id: number;
+    name?: string;
+    shopName?: string;
+    email?: string;
+  };
 }
 
 export interface Category {
@@ -47,7 +54,7 @@ export interface Category {
 
 // --- Category Hooks ---
 export const useCategories = (options?: any) => {
-  return useQuery({
+  return useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: async () => {
       const { data } = await apiClient.get('/categories');

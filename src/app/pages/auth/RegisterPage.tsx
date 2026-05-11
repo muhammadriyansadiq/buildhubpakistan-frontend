@@ -122,6 +122,13 @@ export default function RegisterPage() {
     setIsCheckingAuth(false);
   }, [router]);
 
+  useEffect(() => {
+    if (step === 'otp' && timer > 0) {
+      const t = setTimeout(() => setTimer(timer - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [step, timer]);
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -132,13 +139,6 @@ export default function RegisterPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (step === 'otp' && timer > 0) {
-      const t = setTimeout(() => setTimer(timer - 1), 1000);
-      return () => clearTimeout(t);
-    }
-  }, [step, timer]);
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);

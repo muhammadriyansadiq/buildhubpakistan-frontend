@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   LayoutDashboard, Users, Package, Briefcase, ShoppingBag, FileText,
@@ -9,9 +9,14 @@ import {
   Store, User, Mail, Phone, MapPin, Calendar, Edit, Trash2, Ban,
   CheckCircle2, XCircle, Building, Shield, Tag, Bell, Activity,
   UserCheck, UserX, PackageCheck, PackageX, Layers, Percent, ChevronDown,
-  Plus, Save, Smile, Upload, Image as ImageIcon, Truck
+  Plus, Save, Smile, Upload, Image as ImageIcon, Truck, Loader2,
+  CreditCard, Hash, FileCheck, ArrowLeft, Globe, Landmark
 } from 'lucide-react';
 import DemoNav from '../../components/layout/DemoNav';
+import { useCategories, useProducts } from '@/hooks/useProduct';
+import { useUsers, useUserById, useUpdateUserMutation } from '@/hooks/useUser';
+import { useOrders, useUpdateOrderStatus } from '@/hooks/useOrder';
+import { toast } from 'sonner';
 
 // Generate mock data for vendors pending approval
 const generatePendingVendors = () => {
@@ -155,16 +160,372 @@ const emojiOptions = [
 
 type Section = 'overview' | 'vendors' | 'service-providers' | 'buyers' | 'orders' | 'categories' | 'revenue' | 'settings';
 
+function UserDetailModal({ userId, userRole, onClose, onApprove, onReject }: {
+  userId: number;
+  userRole: string;
+  onClose: () => void;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+}) {
+  const { data: userData, isLoading } = useUserById(userId);
+  const user = userData?.data;
+
+  const approvalConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+    Pending: { label: 'Pending Review', color: '#92400E', bg: '#FEF3C7', icon: Clock },
+    Approved: { label: 'Approved', color: '#166534', bg: '#DCFCE7', icon: CheckCircle2 },
+    Rejected: { label: 'Rejected', color: '#991B1B', bg: '#FEE2E2', icon: XCircle },
+  };
+
+  const InfoRow = ({ icon: Icon, label, value, copyable }: { icon: any; label: string; value?: string | null; copyable?: boolean }) => {
+    if (!value) return null;
+    return (
+      <div className="flex items-start gap-3 py-3 border-b" style={{ borderColor: '#F1F5F9' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F8FAFC' }}>
+          <Icon size={15} style={{ color: '#64748B' }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium mb-0.5" style={{ color: '#94A3B8' }}>{label}</div>
+          <div className="text-sm font-semibold break-all" style={{ color: '#1E293B' }}>{value}</div>
+        </div>
+      </div>
+    );
+  };
+
+  const SectionCard = ({ title, icon: Icon, color, children }: { title: string; icon: any; color: string; children: React.ReactNode }) => (
+    <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+      <div className="px-5 py-4 border-b flex items-center gap-3" style={{ borderColor: '#E2E8F0' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+          <Icon size={16} style={{ color }} />
+        </div>
+        <h3 className="font-bold text-sm" style={{ color: '#1E293B' }}>{title}</h3>
+      </div>
+      <div className="px-5 py-2">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      {/* Slide-in Panel */}
+      <div
+        className="relative ml-auto w-full max-w-2xl bg-gray-50 h-full shadow-2xl flex flex-col animate-in slide-in-from-right"
+        onClick={(e) => e.stopPropagation()}
+        style={{ animation: 'slideInRight 0.3s ease-out' }}
+      >
+        {/* Panel Header */}
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ borderColor: '#E2E8F0' }}>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeft size={18} style={{ color: '#64748B' }} />
+            </button>
+            <div>
+              <h2 className="font-bold text-lg" style={{ color: '#1E293B' }}>
+                {userRole === 'Vendor' ? 'Vendor' : 'Service Provider'} Details
+              </h2>
+              <p className="text-xs" style={{ color: '#94A3B8' }}>Full profile and business information</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+          >
+            <X size={18} style={{ color: '#64748B' }} />
+          </button>
+        </div>
+
+        {/* Panel Body */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <Loader2 size={36} className="animate-spin" style={{ color: '#ef4136' }} />
+              <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading details...</p>
+            </div>
+          ) : !user ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <XCircle size={48} style={{ color: '#CBD5E1' }} />
+              <p className="text-sm" style={{ color: '#64748B' }}>User data not found</p>
+            </div>
+          ) : (
+            <div className="p-6 space-y-5">
+
+              {/* Profile Hero */}
+              <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                <div className="h-24 relative" style={{
+                  background: userRole === 'Vendor'
+                    ? 'linear-gradient(135deg, #ef4136 0%, #FF6B6B 50%, #ee5a24 100%)'
+                    : 'linear-gradient(135deg, #10B981 0%, #34D399 50%, #059669 100%)'
+                }}>
+                  {user.shopCoverImage && (
+                    <img src={user.shopCoverImage} alt="Cover" className="w-full h-full object-cover absolute inset-0 opacity-40" />
+                  )}
+                </div>
+                <div className="px-6 pb-5 -mt-10 relative">
+                  <div className="flex items-end gap-4 mb-4">
+                    <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#F1F5F9' }}>
+                      {user.logo ? (
+                        <img src={user.logo} alt={user.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl font-bold" style={{ color: '#64748B' }}>
+                          {user.fullName?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 pt-10">
+                      <h3 className="font-bold text-xl" style={{ color: '#1E293B' }}>{user.fullName}</h3>
+                      <p className="text-sm" style={{ color: '#64748B' }}>
+                        {user.shopName || user.role} • ID: #{user.id}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Status Badges Row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(() => {
+                      const a = approvalConfig[user.isApproved || 'Pending'];
+                      const StatusIcon = a.icon;
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ color: a.color, backgroundColor: a.bg }}>
+                          <StatusIcon size={13} /> {a.label}
+                        </span>
+                      );
+                    })()}
+                    <span className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{
+                      backgroundColor: user.status === 'Active' ? '#DCFCE7' : '#FEE2E2',
+                      color: user.status === 'Active' ? '#166534' : '#991B1B'
+                    }}>
+                      {user.status}
+                    </span>
+                    <span className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{
+                      backgroundColor: user.isPhoneVerified ? '#DBEAFE' : '#FEF3C7',
+                      color: user.isPhoneVerified ? '#1E40AF' : '#92400E'
+                    }}>
+                      Phone {user.isPhoneVerified ? 'Verified' : 'Unverified'}
+                    </span>
+                    {user.isProfileComplete && (
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{ backgroundColor: '#F0FDF4', color: '#166534' }}>
+                        Profile Complete
+                      </span>
+                    )}
+                    {user.tier && (
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{ backgroundColor: '#EDE9FE', color: '#5B21B6' }}>
+                        {user.tier} Tier
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Information */}
+              <SectionCard title="Personal Information" icon={User} color="#3B82F6">
+                <InfoRow icon={User} label="Full Name" value={user.fullName} />
+                <InfoRow icon={Mail} label="Email Address" value={user.email} />
+                <InfoRow icon={Phone} label="Phone Number" value={user.phone} />
+                <InfoRow icon={Hash} label="CNIC Number" value={user.cnicNumber} />
+                <InfoRow icon={Shield} label="Account Type" value={user.accountType} />
+                <InfoRow icon={Calendar} label="Registered On" value={new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} />
+                <InfoRow icon={Calendar} label="Last Updated" value={new Date(user.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} />
+              </SectionCard>
+
+              {/* Business Information (for Vendors) */}
+              {(user.shopName || user.businessAddress || user.warehouseAddress || user.returnAddress || user.ntnNumber) && (
+                <SectionCard title="Business Information" icon={Store} color="#F59E0B">
+                  <InfoRow icon={Store} label="Shop / Business Name" value={user.shopName} />
+                  <InfoRow icon={FileCheck} label="NTN Number" value={user.ntnNumber} />
+                  <InfoRow icon={Building} label="Business Address" value={user.businessAddress} />
+                  <InfoRow icon={Truck} label="Warehouse Address" value={user.warehouseAddress} />
+                  <InfoRow icon={ArrowLeft} label="Return Address" value={user.returnAddress} />
+                  <InfoRow icon={MapPin} label="General Address" value={user.address} />
+                </SectionCard>
+              )}
+
+              {/* Bank / Payment Details */}
+              {(user.accountTitle || user.accountNumber || user.ibanNumber || user.branchCode) && (
+                <SectionCard title="Bank & Payment Details" icon={Landmark} color="#8B5CF6">
+                  <InfoRow icon={User} label="Account Title" value={user.accountTitle} />
+                  <InfoRow icon={CreditCard} label="Account Number" value={user.accountNumber} />
+                  <InfoRow icon={Globe} label="IBAN Number" value={user.ibanNumber} />
+                  <InfoRow icon={Hash} label="Branch Code" value={user.branchCode} />
+                </SectionCard>
+              )}
+
+              {/* Onboarding Progress */}
+              <SectionCard title="Onboarding Progress" icon={Activity} color="#10B981">
+                <div className="py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold" style={{ color: '#64748B' }}>Step {user.onboardingStep} of 5</span>
+                    <span className="text-xs font-bold" style={{ color: '#10B981' }}>{Math.round((user.onboardingStep / 5) * 100)}%</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: '#F1F5F9' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(user.onboardingStep / 5) * 100}%`,
+                        background: 'linear-gradient(90deg, #10B981, #34D399)'
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-3">
+                    {[1, 2, 3, 4, 5].map((step) => (
+                      <div key={step} className="flex flex-col items-center gap-1">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{
+                            backgroundColor: step <= user.onboardingStep ? '#10B981' : '#E2E8F0',
+                            color: step <= user.onboardingStep ? 'white' : '#94A3B8'
+                          }}
+                        >
+                          {step <= user.onboardingStep ? <Check size={14} /> : step}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </SectionCard>
+
+              {/* Saved Addresses */}
+              {user.addresses && user.addresses.length > 0 && (
+                <SectionCard title={`Saved Addresses (${user.addresses.length})`} icon={MapPin} color="#EF4444">
+                  {user.addresses.map((addr: any, idx: number) => (
+                    <div key={addr.id || idx} className="py-3 border-b last:border-b-0" style={{ borderColor: '#F1F5F9' }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}>
+                          {addr.label || `Address ${idx + 1}`}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold mb-0.5" style={{ color: '#1E293B' }}>{addr.fullName}</p>
+                      <p className="text-xs" style={{ color: '#64748B' }}>
+                        {addr.streetAddress}, {addr.city}, {addr.province} {addr.postalCode || ''}
+                      </p>
+                      <div className="flex items-center gap-4 mt-1.5">
+                        <span className="text-xs flex items-center gap-1" style={{ color: '#94A3B8' }}>
+                          <Phone size={11} /> {addr.phone}
+                        </span>
+                        <span className="text-xs flex items-center gap-1" style={{ color: '#94A3B8' }}>
+                          <Mail size={11} /> {addr.email}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </SectionCard>
+              )}
+
+              {/* Receipt */}
+              {user.receipt && (
+                <SectionCard title="Payment Receipt" icon={FileText} color="#EF4444">
+                  <div className="py-3">
+                    <a
+                      href={user.receipt}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 hover:bg-gray-50 transition-colors"
+                      style={{ borderColor: '#E2E8F0', color: '#3B82F6' }}
+                    >
+                      <Eye size={16} /> View Receipt
+                    </a>
+                  </div>
+                </SectionCard>
+              )}
+
+            </div>
+          )}
+        </div>
+
+        {/* Panel Footer - Actions */}
+        {user && (
+          <div className="bg-white border-t px-6 py-4 flex items-center gap-3 flex-shrink-0" style={{ borderColor: '#E2E8F0' }}>
+            {user.isApproved !== 'Approved' && (
+              <button
+                onClick={() => onApprove(user.id)}
+                className="flex-1 py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: '#10B981' }}
+              >
+                <CheckCircle2 size={18} /> Approve {userRole === 'Vendor' ? 'Vendor' : 'Provider'}
+              </button>
+            )}
+            {user.isApproved !== 'Rejected' && (
+              <button
+                onClick={() => onReject(user.id)}
+                className="flex-1 py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                <XCircle size={18} /> Reject
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-6 py-3 rounded-xl font-semibold border-2 hover:bg-gray-50 transition-colors"
+              style={{ borderColor: '#E2E8F0', color: '#64748B' }}
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function SuperAdminDashboard() {
   const params = useParams();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>((params?.section as Section) || 'overview');
   const [selectedTab, setSelectedTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // User fetching hooks
+  const { data: vendorsData, isLoading: vendorsLoading } = useUsers({ role: 'Vendor' });
+  const { data: serviceProvidersData, isLoading: serviceProvidersLoading } = useUsers({ role: 'Service Provider' });
+  const { data: buyersData, isLoading: buyersLoading } = useUsers({ role: 'User' });
+  const updateUserMutation = useUpdateUserMutation();
+
+  // Orders fetching
+  const [orderFilters, setOrderFilters] = useState({
+    search: '',
+    status: 'All', // Default to 'All'
+    paymentStatus: 'all',
+    orderType: 'all',
+    dateRange: 'all',
+    vendor: 'all',
+    priority: 'all'
+  });
+  const { data: ordersData, isLoading: ordersLoading } = useOrders({
+    status: orderFilters.status === 'All' ? undefined : orderFilters.status,
+    search: orderFilters.search || undefined,
+  });
+  const updateOrderMutation = useUpdateOrderStatus();
+
+  const vendors = vendorsData?.data || [];
+  const serviceProviders = serviceProvidersData?.data || [];
+  const buyers = buyersData?.data || [];
 
   // Category management state
+  const { data: apiCategories, isLoading: categoriesLoading } = useCategories();
   const [categories, setCategories] = useState(initialCategories);
+
+  useEffect(() => {
+    if (Array.isArray(apiCategories)) {
+      setCategories(apiCategories.map((cat: any) => ({
+        ...cat,
+        emoji: '📦',
+        active: cat.status === 'Active' || true,
+        productCount: cat.products?.length || 0
+      })));
+    }
+  }, [apiCategories]);
+
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -176,30 +537,25 @@ export default function SuperAdminDashboard() {
     active: true
   });
 
-  // Orders management state
-  const [orderFilters, setOrderFilters] = useState({
-    search: '',
-    status: 'all',
-    paymentStatus: 'all',
-    orderType: 'all',
-    dateRange: 'all',
-    vendor: 'all',
-    priority: 'all'
-  });
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<any>(null);
   const [ordersPage, setOrdersPage] = useState(1);
   const ordersPerPage = 15;
 
+<<<<<<< Updated upstream
   const handleLogout = () => {
     localStorage.clear();
     router.push('/login');
   };
+=======
+  const orders = ordersData?.data || [];
+  const totalOrdersCount = ordersData?.total || 0;
+>>>>>>> Stashed changes
 
   const navItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'vendors', label: 'Vendors', icon: Store, badge: mockVendors.filter(v => v.status === 'pending').length },
-    { id: 'service-providers', label: 'Service Providers', icon: Briefcase, badge: mockServiceProviders.filter(sp => sp.status === 'pending').length },
+    { id: 'vendors', label: 'Vendors', icon: Store, badge: vendors.filter(v => v.isApproved === 'Pending').length },
+    { id: 'service-providers', label: 'Service Providers', icon: Briefcase, badge: serviceProviders.filter(sp => sp.isApproved === 'Pending').length },
     { id: 'buyers', label: 'Buyers', icon: Users },
     { id: 'orders', label: 'All Orders', icon: ShoppingBag },
     { id: 'categories', label: 'Categories', icon: Layers },
@@ -211,14 +567,30 @@ export default function SuperAdminDashboard() {
     router.push(`/admin/super/${section}`);
   };
 
-  const handleApprove = (type: string, id: string) => {
-    alert(`${type} ${id} approved successfully!`);
-    setSelectedItem(null);
+  const handleApprove = async (type: string, id: string | number) => {
+    try {
+      await updateUserMutation.mutateAsync({
+        id,
+        payload: { isApproved: 'Approved' }
+      });
+      toast.success(`${type} approved successfully!`);
+      setSelectedItem(null);
+    } catch (error) {
+      toast.error(`Failed to approve ${type}`);
+    }
   };
 
-  const handleReject = (type: string, id: string) => {
-    alert(`${type} ${id} rejected!`);
-    setSelectedItem(null);
+  const handleReject = async (type: string, id: string | number) => {
+    try {
+      await updateUserMutation.mutateAsync({
+        id,
+        payload: { isApproved: 'Rejected' }
+      });
+      toast.success(`${type} rejected successfully!`);
+      setSelectedItem(null);
+    } catch (error) {
+      toast.error(`Failed to reject ${type}`);
+    }
   };
 
   // Category management functions
@@ -235,7 +607,7 @@ export default function SuperAdminDashboard() {
           ? { ...cat, ...categoryForm }
           : cat
       ));
-      alert('Category updated successfully!');
+      toast.success('Category updated successfully!');
     } else {
       // Add new category
       const newCategory = {
@@ -244,7 +616,7 @@ export default function SuperAdminDashboard() {
         productCount: 0
       };
       setCategories([...categories, newCategory]);
-      alert('Category created successfully!');
+      toast.success('Category created successfully!');
     }
 
     // Reset form
@@ -280,10 +652,10 @@ export default function SuperAdminDashboard() {
 
   // Calculate platform stats
   const platformStats = {
-    totalVendors: mockVendors.filter(v => v.status === 'approved').length,
-    pendingVendors: mockVendors.filter(v => v.status === 'pending').length,
-    totalServiceProviders: mockServiceProviders.filter(sp => sp.status === 'approved').length,
-    pendingServiceProviders: mockServiceProviders.filter(sp => sp.status === 'pending').length,
+    totalVendors: vendors.filter(v => v.isApproved === 'Approved').length,
+    pendingVendors: vendors.filter(v => v.isApproved === 'Pending').length,
+    totalServiceProviders: serviceProviders.filter(sp => sp.isApproved === 'Approved').length,
+    pendingServiceProviders: serviceProviders.filter(sp => sp.isApproved === 'Pending').length,
     totalRevenue: 2450000,
     monthlyRevenue: 450000,
     totalOrders: 1247,
@@ -527,10 +899,10 @@ export default function SuperAdminDashboard() {
               <div className="bg-white rounded-2xl shadow-sm border overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
                 <div className="flex border-b" style={{ borderColor: '#E2E8F0' }}>
                   {[
-                    { id: 'all', label: 'All Vendors', count: mockVendors.length },
-                    { id: 'pending', label: 'Pending Approval', count: mockVendors.filter(v => v.status === 'pending').length },
-                    { id: 'approved', label: 'Approved', count: mockVendors.filter(v => v.status === 'approved').length },
-                    { id: 'rejected', label: 'Rejected', count: mockVendors.filter(v => v.status === 'rejected').length },
+                    { id: 'all', label: 'All Vendors', count: vendors.length },
+                    { id: 'Pending', label: 'Pending Approval', count: vendors.filter(v => v.isApproved === 'Pending').length },
+                    { id: 'Approved', label: 'Approved', count: vendors.filter(v => v.isApproved === 'Approved').length },
+                    { id: 'Rejected', label: 'Rejected', count: vendors.filter(v => v.isApproved === 'Rejected').length },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -569,36 +941,48 @@ export default function SuperAdminDashboard() {
 
                 {/* Vendor List */}
                 <div className="divide-y" style={{ borderColor: '#F1F5F9' }}>
-                  {mockVendors
-                    .filter(v => selectedTab === 'all' || v.status === selectedTab)
-                    .filter(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                v.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                v.businessName.toLowerCase().includes(searchQuery.toLowerCase()))
+                  {vendorsLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 size={40} className="animate-spin mb-4" style={{ color: '#ef4136' }} />
+                      <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading vendors...</p>
+                    </div>
+                  ) : vendors
+                    .filter(v => {
+                      if (selectedTab === 'all') return true;
+                      return v.isApproved === selectedTab;
+                    })
+                    .filter(v => (v.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (v.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (v.shopName || '').toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((vendor) => {
                       const statusConfig = {
-                        pending: { label: 'Pending', color: '#92400E', bg: '#FEF3C7' },
-                        approved: { label: 'Approved', color: '#166534', bg: '#DCFCE7' },
-                        rejected: { label: 'Rejected', color: '#991B1B', bg: '#FEE2E2' },
+                        Pending: { label: 'Pending', color: '#92400E', bg: '#FEF3C7' },
+                        Approved: { label: 'Approved', color: '#166534', bg: '#DCFCE7' },
+                        Rejected: { label: 'Rejected', color: '#991B1B', bg: '#FEE2E2' },
                       };
-                      const s = statusConfig[vendor.status as keyof typeof statusConfig];
+                      const s = statusConfig[vendor.isApproved as keyof typeof statusConfig] || statusConfig.Pending;
 
                       return (
                         <div key={vendor.id} className="p-5 hover:bg-gray-50 transition-colors">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex items-start gap-4 flex-1">
-                              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#F1F5F9' }}>
-                                <Store size={24} style={{ color: '#64748B' }} />
+                              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#F1F5F9' }}>
+                                {vendor.logo ? (
+                                  <img src={vendor.logo} alt={vendor.shopName ?? undefined} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Store size={24} style={{ color: '#64748B' }} />
+                                )}
                               </div>
                               <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                   <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Vendor ID</div>
-                                  <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{vendor.id}</div>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{vendor.name}</div>
+                                  <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>V-{vendor.id}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{vendor.fullName}</div>
                                 </div>
                                 <div>
-                                  <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Business</div>
-                                  <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{vendor.businessName}</div>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{vendor.category}</div>
+                                  <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Shop/Business</div>
+                                  <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{vendor.shopName || 'N/A'}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{vendor.tier || 'Standard'}</div>
                                 </div>
                                 <div>
                                   <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Contact</div>
@@ -610,7 +994,7 @@ export default function SuperAdminDashboard() {
                                   <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: s.color, backgroundColor: s.bg }}>
                                     {s.label}
                                   </span>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Reg: {vendor.registeredDate}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Reg: {new Date(vendor.createdAt).toLocaleDateString()}</div>
                                 </div>
                               </div>
                             </div>
@@ -624,32 +1008,24 @@ export default function SuperAdminDashboard() {
                               >
                                 <Eye size={16} style={{ color: '#3B82F6' }} />
                               </button>
-                              {vendor.status === 'pending' && (
-                                <>
-                                  <button
-                                    onClick={() => handleApprove('Vendor', vendor.id)}
-                                    className="p-2 rounded-lg hover:bg-green-50 transition-colors"
-                                    title="Approve"
-                                  >
-                                    <Check size={16} style={{ color: '#10B981' }} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleReject('Vendor', vendor.id)}
-                                    className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="Reject"
-                                  >
-                                    <X size={16} style={{ color: '#EF4444' }} />
-                                  </button>
-                                </>
-                              )}
-                              {vendor.status === 'approved' && (
+                              {selectedTab !== 'Approved' && (
                                 <button
-                                  className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                                  title="Suspend"
+                                  onClick={() => handleApprove('Vendor', vendor.id)}
+                                  className={`p-2 rounded-lg transition-colors ${vendor.isApproved === 'Approved' ? 'bg-green-50' : 'hover:bg-green-50'}`}
+                                  title="Approve"
+                                  disabled={vendor.isApproved === 'Approved'}
                                 >
-                                  <Ban size={16} style={{ color: '#EF4444' }} />
+                                  <Check size={16} style={{ color: vendor.isApproved === 'Approved' ? '#10B981' : '#64748B' }} />
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleReject('Vendor', vendor.id)}
+                                className={`p-2 rounded-lg transition-colors ${vendor.isApproved === 'Rejected' ? 'bg-red-50' : 'hover:bg-red-50'}`}
+                                title="Reject"
+                                disabled={vendor.isApproved === 'Rejected'}
+                              >
+                                <X size={16} style={{ color: vendor.isApproved === 'Rejected' ? '#EF4444' : '#64748B' }} />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -667,10 +1043,10 @@ export default function SuperAdminDashboard() {
               <div className="bg-white rounded-2xl shadow-sm border overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
                 <div className="flex border-b" style={{ borderColor: '#E2E8F0' }}>
                   {[
-                    { id: 'all', label: 'All Providers', count: mockServiceProviders.length },
-                    { id: 'pending', label: 'Pending Approval', count: mockServiceProviders.filter(sp => sp.status === 'pending').length },
-                    { id: 'approved', label: 'Approved', count: mockServiceProviders.filter(sp => sp.status === 'approved').length },
-                    { id: 'rejected', label: 'Rejected', count: mockServiceProviders.filter(sp => sp.status === 'rejected').length },
+                    { id: 'all', label: 'All Providers', count: serviceProviders.length },
+                    { id: 'Pending', label: 'Pending Approval', count: serviceProviders.filter(sp => sp.isApproved === 'Pending').length },
+                    { id: 'Approved', label: 'Approved', count: serviceProviders.filter(sp => sp.isApproved === 'Approved').length },
+                    { id: 'Rejected', label: 'Rejected', count: serviceProviders.filter(sp => sp.isApproved === 'Rejected').length },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -709,18 +1085,26 @@ export default function SuperAdminDashboard() {
 
                 {/* Service Provider List */}
                 <div className="divide-y" style={{ borderColor: '#F1F5F9' }}>
-                  {mockServiceProviders
-                    .filter(sp => selectedTab === 'all' || sp.status === selectedTab)
-                    .filter(sp => sp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                 sp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                 sp.occupation.toLowerCase().includes(searchQuery.toLowerCase()))
+                  {serviceProvidersLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 size={40} className="animate-spin mb-4" style={{ color: '#ef4136' }} />
+                      <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading providers...</p>
+                    </div>
+                  ) : serviceProviders
+                    .filter(sp => {
+                      if (selectedTab === 'all') return true;
+                      return sp.isApproved === selectedTab;
+                    })
+                    .filter(sp => (sp.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 (sp.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                 (sp.role || '').toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((provider) => {
                       const statusConfig = {
-                        pending: { label: 'Pending', color: '#92400E', bg: '#FEF3C7' },
-                        approved: { label: 'Approved', color: '#166534', bg: '#DCFCE7' },
-                        rejected: { label: 'Rejected', color: '#991B1B', bg: '#FEE2E2' },
+                        Pending: { label: 'Pending', color: '#92400E', bg: '#FEF3C7' },
+                        Approved: { label: 'Approved', color: '#166534', bg: '#DCFCE7' },
+                        Rejected: { label: 'Rejected', color: '#991B1B', bg: '#FEE2E2' },
                       };
-                      const s = statusConfig[provider.status as keyof typeof statusConfig];
+                      const s = statusConfig[provider.isApproved as keyof typeof statusConfig] || statusConfig.Pending;
 
                       return (
                         <div key={provider.id} className="p-5 hover:bg-gray-50 transition-colors">
@@ -732,13 +1116,13 @@ export default function SuperAdminDashboard() {
                               <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                   <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Provider ID</div>
-                                  <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{provider.id}</div>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{provider.name}</div>
+                                  <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>SP-{provider.id}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>{provider.fullName}</div>
                                 </div>
                                 <div>
                                   <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Occupation</div>
-                                  <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{provider.occupation}</div>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Exp: {provider.experience}</div>
+                                  <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{provider.role}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Status: {provider.status}</div>
                                 </div>
                                 <div>
                                   <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Contact</div>
@@ -750,7 +1134,7 @@ export default function SuperAdminDashboard() {
                                   <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: s.color, backgroundColor: s.bg }}>
                                     {s.label}
                                   </span>
-                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Reg: {provider.registeredDate}</div>
+                                  <div className="text-xs mt-1" style={{ color: '#64748B' }}>Reg: {new Date(provider.createdAt).toLocaleDateString()}</div>
                                 </div>
                               </div>
                             </div>
@@ -764,32 +1148,24 @@ export default function SuperAdminDashboard() {
                               >
                                 <Eye size={16} style={{ color: '#3B82F6' }} />
                               </button>
-                              {provider.status === 'pending' && (
-                                <>
-                                  <button
-                                    onClick={() => handleApprove('Service Provider', provider.id)}
-                                    className="p-2 rounded-lg hover:bg-green-50 transition-colors"
-                                    title="Approve"
-                                  >
-                                    <Check size={16} style={{ color: '#10B981' }} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleReject('Service Provider', provider.id)}
-                                    className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="Reject"
-                                  >
-                                    <X size={16} style={{ color: '#EF4444' }} />
-                                  </button>
-                                </>
-                              )}
-                              {provider.status === 'approved' && (
+                              {selectedTab !== 'Approved' && (
                                 <button
-                                  className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                                  title="Suspend"
+                                  onClick={() => handleApprove('Service Provider', provider.id)}
+                                  className={`p-2 rounded-lg transition-colors ${provider.isApproved === 'Approved' ? 'bg-green-50' : 'hover:bg-green-50'}`}
+                                  title="Approve"
+                                  disabled={provider.isApproved === 'Approved'}
                                 >
-                                  <Ban size={16} style={{ color: '#EF4444' }} />
+                                  <Check size={16} style={{ color: provider.isApproved === 'Approved' ? '#10B981' : '#64748B' }} />
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleReject('Service Provider', provider.id)}
+                                className={`p-2 rounded-lg transition-colors ${provider.isApproved === 'Rejected' ? 'bg-red-50' : 'hover:bg-red-50'}`}
+                                title="Reject"
+                                disabled={provider.isApproved === 'Rejected'}
+                              >
+                                <X size={16} style={{ color: provider.isApproved === 'Rejected' ? '#EF4444' : '#64748B' }} />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1001,7 +1377,12 @@ export default function SuperAdminDashboard() {
 
               {/* Categories Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categories.map((category) => (
+                {categoriesLoading ? (
+                  <div className="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed" style={{ borderColor: '#E2E8F0' }}>
+                    <Loader2 size={40} className="animate-spin mb-4" style={{ color: '#ef4136' }} />
+                    <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading categories...</p>
+                  </div>
+                ) : categories.map((category) => (
                   <div
                     key={category.id}
                     className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
@@ -1109,62 +1490,32 @@ export default function SuperAdminDashboard() {
 
           {/* ─── ORDERS MANAGEMENT ─── */}
           {activeSection === 'orders' && (() => {
-            // Filter orders
-            const filteredOrders = allOrders.filter(order => {
-              const matchesSearch = order.id.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-                order.buyer.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-                order.vendor.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-                order.items.toLowerCase().includes(orderFilters.search.toLowerCase());
-              const matchesStatus = orderFilters.status === 'all' || order.status === orderFilters.status;
-              const matchesPayment = orderFilters.paymentStatus === 'all' || order.paymentStatus === orderFilters.paymentStatus;
-              const matchesType = orderFilters.orderType === 'all' || order.type === orderFilters.orderType;
-              const matchesVendor = orderFilters.vendor === 'all' || order.vendor === orderFilters.vendor;
-              const matchesPriority = orderFilters.priority === 'all' || order.priority === orderFilters.priority;
-
-              let matchesDate = true;
-              if (orderFilters.dateRange !== 'all') {
-                const orderDate = new Date(order.orderDate);
-                const now = new Date();
-                if (orderFilters.dateRange === 'today') {
-                  matchesDate = orderDate.toDateString() === now.toDateString();
-                } else if (orderFilters.dateRange === 'week') {
-                  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                  matchesDate = orderDate >= weekAgo;
-                } else if (orderFilters.dateRange === 'month') {
-                  matchesDate = orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-                }
-              }
-
-              return matchesSearch && matchesStatus && matchesPayment && matchesType && matchesVendor && matchesPriority && matchesDate;
-            });
-
-            // Calculate order metrics
+            // Calculate order metrics (from all available data if possible, or current page)
             const orderMetrics = {
-              total: allOrders.length,
-              pending: allOrders.filter(o => o.status === 'pending').length,
-              processing: allOrders.filter(o => o.status === 'processing').length,
-              shipped: allOrders.filter(o => o.status === 'shipped').length,
-              delivered: allOrders.filter(o => o.status === 'delivered').length,
-              cancelled: allOrders.filter(o => o.status === 'cancelled').length,
-              totalRevenue: allOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalAmount, 0),
-              totalCommission: allOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.commission, 0),
-              pendingPayments: allOrders.filter(o => o.paymentStatus === 'pending').length,
-              highPriority: allOrders.filter(o => o.priority === 'high').length
+              total: totalOrdersCount,
+              pending: orders.filter(o => o.orderStatus === 'Pending').length,
+              processing: orders.filter(o => o.orderStatus === 'Processing').length,
+              shipped: orders.filter(o => o.orderStatus === 'Shipped').length,
+              delivered: orders.filter(o => o.orderStatus === 'Delivered').length,
+              cancelled: orders.filter(o => o.orderStatus === 'Cancelled').length,
+              totalRevenue: orders.filter(o => o.orderStatus === 'Delivered').reduce((sum, o) => sum + parseFloat(o.totalAmount || '0'), 0),
+              pendingPayments: orders.filter(o => o.paymentStatus === 'Unpaid').length,
             };
 
-            // Pagination
-            const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-            const paginatedOrders = filteredOrders.slice(
-              (ordersPage - 1) * ordersPerPage,
-              ordersPage * ordersPerPage
-            );
+            const paginatedOrders = orders;
+            const totalPages = ordersData?.lastPage || 1;
 
-            const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
-              alert(`Order ${orderId} status updated to ${newStatus}`);
+            const handleUpdateOrderStatus = async (orderId: number, newStatus: string) => {
+              try {
+                await updateOrderMutation.mutateAsync({ id: orderId, status: newStatus });
+                toast.success(`Order #${orderId} status updated to ${newStatus}`);
+              } catch (error) {
+                toast.error(`Failed to update order status`);
+              }
             };
 
             const handleBulkAction = (action: string) => {
-              alert(`Bulk action "${action}" applied to ${selectedOrders.length} orders`);
+              toast.info(`Bulk action "${action}" applied to ${selectedOrders.length} orders`);
               setSelectedOrders([]);
             };
 
@@ -1175,9 +1526,9 @@ export default function SuperAdminDashboard() {
                   {[
                     { label: 'Total Orders', value: orderMetrics.total, icon: ShoppingBag, color: '#3e3e3e', subtext: 'All time' },
                     { label: 'Pending', value: orderMetrics.pending, icon: Clock, color: '#F59E0B', subtext: 'Awaiting confirmation' },
-                    { label: 'In Transit', value: orderMetrics.shipped, icon: Truck, color: '#3B82F6', subtext: 'Shipped orders' },
+                    { label: 'Shipped', value: orderMetrics.shipped, icon: Truck, color: '#3B82F6', subtext: 'Shipped orders' },
                     { label: 'Delivered', value: orderMetrics.delivered, icon: CheckCircle2, color: '#10B981', subtext: 'Completed' },
-                    { label: 'Commission', value: `Rs. ${(orderMetrics.totalCommission / 1000).toFixed(0)}K`, icon: DollarSign, color: '#8B5CF6', subtext: 'Platform earnings' },
+                    { label: 'Total Sales', value: `Rs. ${(orderMetrics.totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: '#8B5CF6', subtext: 'Platform volume' },
                   ].map((metric) => {
                     const Icon = metric.icon;
                     return (
@@ -1200,13 +1551,12 @@ export default function SuperAdminDashboard() {
                   {/* Status Tabs */}
                   <div className="flex border-b overflow-x-auto" style={{ borderColor: '#E2E8F0' }}>
                     {[
-                      { id: 'all', label: 'All Orders', count: allOrders.length },
-                      { id: 'pending', label: 'Pending', count: orderMetrics.pending },
-                      { id: 'confirmed', label: 'Confirmed', count: allOrders.filter(o => o.status === 'confirmed').length },
-                      { id: 'processing', label: 'Processing', count: orderMetrics.processing },
-                      { id: 'shipped', label: 'Shipped', count: orderMetrics.shipped },
-                      { id: 'delivered', label: 'Delivered', count: orderMetrics.delivered },
-                      { id: 'cancelled', label: 'Cancelled', count: orderMetrics.cancelled },
+                      { id: 'All', label: 'All Orders', count: totalOrdersCount },
+                      { id: 'Pending', label: 'Pending', count: orderMetrics.pending },
+                      { id: 'Processing', label: 'Processing', count: orderMetrics.processing },
+                      { id: 'Shipped', label: 'Shipped', count: orderMetrics.shipped },
+                      { id: 'Delivered', label: 'Delivered', count: orderMetrics.delivered },
+                      { id: 'Cancelled', label: 'Cancelled', count: orderMetrics.cancelled },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -1341,27 +1691,29 @@ export default function SuperAdminDashboard() {
 
                   {/* Orders List */}
                   <div className="divide-y" style={{ borderColor: '#F1F5F9' }}>
-                    {paginatedOrders.length > 0 ? paginatedOrders.map((order) => {
+                    {ordersLoading ? (
+                      <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 size={40} className="animate-spin mb-4" style={{ color: '#ef4136' }} />
+                        <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading orders...</p>
+                      </div>
+                    ) : paginatedOrders.length > 0 ? paginatedOrders.map((order) => {
                       const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-                        pending: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
-                        confirmed: { label: 'Confirmed', color: '#3B82F6', bg: '#DBEAFE' },
-                        processing: { label: 'Processing', color: '#8B5CF6', bg: '#EDE9FE' },
-                        shipped: { label: 'Shipped', color: '#06B6D4', bg: '#CFFAFE' },
-                        delivered: { label: 'Delivered', color: '#10B981', bg: '#DCFCE7' },
-                        cancelled: { label: 'Cancelled', color: '#EF4444', bg: '#FEE2E2' },
-                        refunded: { label: 'Refunded', color: '#64748B', bg: '#F1F5F9' }
+                        Pending: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
+                        Processing: { label: 'Processing', color: '#8B5CF6', bg: '#EDE9FE' },
+                        Shipped: { label: 'Shipped', color: '#06B6D4', bg: '#CFFAFE' },
+                        Delivered: { label: 'Delivered', color: '#10B981', bg: '#DCFCE7' },
+                        Cancelled: { label: 'Cancelled', color: '#EF4444', bg: '#FEE2E2' },
                       };
 
                       const paymentConfig: Record<string, { color: string; bg: string }> = {
-                        paid: { color: '#10B981', bg: '#DCFCE7' },
-                        pending: { color: '#F59E0B', bg: '#FEF3C7' },
-                        partial: { color: '#3B82F6', bg: '#DBEAFE' },
-                        failed: { color: '#EF4444', bg: '#FEE2E2' },
-                        refunded: { color: '#64748B', bg: '#F1F5F9' }
+                        Paid: { color: '#10B981', bg: '#DCFCE7' },
+                        Unpaid: { color: '#F59E0B', bg: '#FEF3C7' },
+                        Partial: { color: '#3B82F6', bg: '#DBEAFE' },
+                        Failed: { color: '#EF4444', bg: '#FEE2E2' },
                       };
 
-                      const s = statusConfig[order.status];
-                      const p = paymentConfig[order.paymentStatus];
+                      const s = statusConfig[order.orderStatus as keyof typeof statusConfig] || { label: order.orderStatus, color: '#64748B', bg: '#F1F5F9' };
+                      const p = paymentConfig[order.paymentStatus as keyof typeof paymentConfig] || { color: '#64748B', bg: '#F1F5F9' };
 
                       return (
                         <div key={order.id} className="p-5 hover:bg-gray-50 transition-colors">
@@ -1369,12 +1721,12 @@ export default function SuperAdminDashboard() {
                             {/* Checkbox */}
                             <input
                               type="checkbox"
-                              checked={selectedOrders.includes(order.id)}
+                              checked={selectedOrders.includes(order.id.toString())}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedOrders([...selectedOrders, order.id]);
+                                  setSelectedOrders([...selectedOrders, order.id.toString()]);
                                 } else {
-                                  setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                                  setSelectedOrders(selectedOrders.filter(id => id !== order.id.toString()));
                                 }
                               }}
                               className="w-4 h-4"
@@ -1385,48 +1737,39 @@ export default function SuperAdminDashboard() {
                               <div>
                                 <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Order ID</div>
                                 <div className="font-mono font-semibold text-sm flex items-center gap-2" style={{ color: '#1E293B' }}>
-                                  {order.id}
-                                  {order.priority === 'high' && (
-                                    <span className="px-1.5 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
-                                      High Priority
-                                    </span>
-                                  )}
+                                  #{order.id}
                                 </div>
                                 <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
-                                  {order.orderDate} {order.orderTime}
+                                  {new Date(order.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
 
                               <div>
                                 <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Buyer</div>
-                                <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{order.buyer}</div>
-                                <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>{order.city}</div>
+                                <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>{order.user?.fullName}</div>
+                                <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>{order.address?.city || 'N/A'}</div>
                               </div>
 
                               <div>
-                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Vendor</div>
-                                <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{order.vendor}</div>
-                                <div className="text-xs mt-0.5 px-1.5 py-0.5 rounded inline-block" style={{
-                                  backgroundColor: order.type === 'Product' ? '#EFF6FF' : order.type === 'Service' ? '#F0FDF4' : '#FEF3C7',
-                                  color: order.type === 'Product' ? '#1E40AF' : order.type === 'Service' ? '#166534' : '#92400E'
-                                }}>
-                                  {order.type}
+                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Payment Info</div>
+                                <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{order.paymentMethod}</div>
+                                <div className="text-xs mt-0.5 truncate" style={{ color: '#64748B' }}>
+                                  ID: {order.transactionId || 'N/A'}
                                 </div>
                               </div>
 
                               <div>
                                 <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Items</div>
-                                <div className="text-sm" style={{ color: '#1E293B' }}>{order.items}</div>
-                                <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>{order.itemCount} item{order.itemCount !== 1 ? 's' : ''}</div>
+                                <div className="text-sm truncate max-w-[150px]" style={{ color: '#1E293B' }} title={order.items.map(i => i.product?.title).join(', ')}>
+                                  {order.items[0]?.product?.title || 'No items'}
+                                </div>
+                                <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>{order.items.length} item{order.items.length !== 1 ? 's' : ''}</div>
                               </div>
 
                               <div>
                                 <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Amount</div>
                                 <div className="font-bold text-sm" style={{ color: '#1E293B' }}>
-                                  Rs. {order.totalAmount.toLocaleString()}
-                                </div>
-                                <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>
-                                  Commission: Rs. {Math.round(order.commission).toLocaleString()}
+                                  Rs. {parseFloat(order.totalAmount).toLocaleString()}
                                 </div>
                               </div>
 
@@ -1435,8 +1778,10 @@ export default function SuperAdminDashboard() {
                                 <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold mb-1" style={{ color: s.color, backgroundColor: s.bg }}>
                                   {s.label}
                                 </span>
-                                <div className="text-xs px-1.5 py-0.5 rounded inline-block" style={{ color: p.color, backgroundColor: p.bg }}>
-                                  {order.paymentStatus}
+                                <div className="block">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold" style={{ color: p.color, backgroundColor: p.bg }}>
+                                    {order.paymentStatus}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -1465,7 +1810,7 @@ export default function SuperAdminDashboard() {
                   {totalPages > 1 && (
                     <div className="p-4 border-t flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
                       <div className="text-sm" style={{ color: '#64748B' }}>
-                        Showing {((ordersPage - 1) * ordersPerPage) + 1} to {Math.min(ordersPage * ordersPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+                        Showing {((ordersPage - 1) * ordersPerPage) + 1} to {Math.min(ordersPage * ordersPerPage, totalOrdersCount)} of {totalOrdersCount} orders
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1669,14 +2014,131 @@ export default function SuperAdminDashboard() {
             );
           })()}
 
+          {/* ─── BUYER MANAGEMENT ─── */}
+          {activeSection === 'buyers' && (
+            <div className="space-y-5">
+              <div className="bg-white rounded-2xl shadow-sm border overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
+                <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
+                  <h3 className="font-bold text-lg" style={{ color: '#1E293B' }}>Platform Buyers</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#F1F5F9', color: '#64748B' }}>
+                      Total Buyers: {buyers.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Search */}
+                <div className="p-4 border-b" style={{ borderColor: '#E2E8F0' }}>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search buyers by name, email, or phone..."
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none"
+                      style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Buyers List */}
+                <div className="divide-y" style={{ borderColor: '#F1F5F9' }}>
+                  {buyersLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 size={40} className="animate-spin mb-4" style={{ color: '#ef4136' }} />
+                      <p className="text-sm font-medium" style={{ color: '#64748B' }}>Loading buyers...</p>
+                    </div>
+                  ) : buyers
+                    .filter(b => (b.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (b.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (b.phone || '').toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((buyer) => (
+                      <div key={buyer.id} className="p-5 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#EEF2FF' }}>
+                              <User size={24} style={{ color: '#6366F1' }} />
+                            </div>
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div>
+                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Buyer ID</div>
+                                <div className="font-semibold text-sm" style={{ color: '#1E293B' }}>B-{buyer.id}</div>
+                                <div className="text-xs mt-1" style={{ color: '#64748B' }}>{buyer.fullName}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Contact Info</div>
+                                <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{buyer.email}</div>
+                                <div className="text-xs mt-1" style={{ color: '#64748B' }}>{buyer.phone}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Verification</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{
+                                    backgroundColor: buyer.isPhoneVerified ? '#DCFCE7' : '#FEE2E2',
+                                    color: buyer.isPhoneVerified ? '#166534' : '#991B1B'
+                                  }}>
+                                    Phone: {buyer.isPhoneVerified ? 'Verified' : 'Unverified'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs mb-1" style={{ color: '#94A3B8' }}>Join Date</div>
+                                <div className="text-sm font-medium" style={{ color: '#1E293B' }}>{new Date(buyer.createdAt).toLocaleDateString()}</div>
+                                <div className="text-xs mt-1" style={{ color: '#64748B' }}>Status: {buyer.status}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedItem(buyer)}
+                              className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                              title="View History"
+                            >
+                              <Eye size={16} style={{ color: '#3B82F6' }} />
+                            </button>
+                            <button
+                              className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                              title="Deactivate Account"
+                            >
+                              <Ban size={16} style={{ color: '#EF4444' }} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {!buyersLoading && buyers.length === 0 && (
+                    <div className="py-20 text-center">
+                      <Users size={48} className="mx-auto mb-4 opacity-20" />
+                      <p style={{ color: '#64748B' }}>No buyers found on the platform yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Other sections placeholders */}
-          {['buyers', 'revenue'].includes(activeSection) && (
+          {['revenue'].includes(activeSection) && (
             <div className="bg-white rounded-2xl shadow-sm border p-8" style={{ borderColor: '#E2E8F0' }}>
               <h2 className="font-bold text-xl mb-4" style={{ color: '#1E293B' }}>
                 {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)} Management
               </h2>
               <p style={{ color: '#64748B' }}>This section is under development. Full functionality coming soon.</p>
             </div>
+          )}
+
+          {/* ─── USER DETAIL MODAL ─── */}
+          {selectedItem && (
+            <UserDetailModal
+              userId={selectedItem.id}
+              userRole={selectedItem.role}
+              onClose={() => setSelectedItem(null)}
+              onApprove={(id: number) => handleApprove(selectedItem.role === 'Vendor' ? 'Vendor' : 'Service Provider', id)}
+              onReject={(id: number) => handleReject(selectedItem.role === 'Vendor' ? 'Vendor' : 'Service Provider', id)}
+            />
           )}
 
         </main>
