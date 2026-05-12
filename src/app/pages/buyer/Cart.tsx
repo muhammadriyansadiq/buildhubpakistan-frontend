@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart, useRemoveFromCartMutation, useUpdateCartQuantityMutation } from '@/hooks/useCart';
 import { toast } from 'sonner';
@@ -47,7 +47,18 @@ const initialCartItems = [
 
 export default function Cart() {
   const router = useRouter();
-  const { data: cartItemsData, isLoading: cartLoading } = useCart();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
+  const { data: cartItemsData, isLoading: cartLoading } = useCart({ enabled: isAuthenticated });
   const cartItems = cartItemsData || [];
 
   const removeMutation = useRemoveFromCartMutation();

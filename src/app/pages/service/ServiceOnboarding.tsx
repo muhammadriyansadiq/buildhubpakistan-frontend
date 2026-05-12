@@ -160,17 +160,21 @@ export default function ServiceOnboarding() {
 
                 {/* Profile Photo */}
                 <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Profile Picture *</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full border-2 border-dashed flex items-center justify-center" style={{ borderColor: '#CBD5E1', backgroundColor: '#F8FAFC' }}>
-                      <Camera size={24} style={{ color: '#94A3B8' }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: '#334155' }}>Upload profile photo</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>PNG, JPG — Min 200×200px</p>
-                      <button className="mt-2 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ borderColor: '#CBD5E1', color: '#64748B' }}>
-                        Browse Photo
-                      </button>
+                  <label className="block text-sm font-semibold mb-3" style={{ color: '#334155' }}>Profile Picture *</label>
+                  <div
+                    className="group relative border-2 border-dashed rounded-[32px] p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300"
+                    style={{
+                      borderColor: '#E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      minHeight: '200px'
+                    }}
+                  >
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:bg-green-50 transition-colors">
+                        <Camera size={32} className="text-[#94A3B8] group-hover:text-[#10B981] transition-colors" />
+                      </div>
+                      <p className="font-bold text-gray-700 mb-1">Click to upload photo</p>
+                      <p className="text-xs text-gray-400">Recommended: 400x400px</p>
                     </div>
                   </div>
                 </div>
@@ -217,16 +221,25 @@ export default function ServiceOnboarding() {
                 </div>
 
                 {/* CNIC / NTN */}
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>
-                    {accountType === 'individual' ? 'CNIC Number *' : 'NTN Number *'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={accountType === 'individual' ? 'XXXXX-XXXXXXX-X' : 'Enter NTN number'}
-                    className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                    style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>CNIC Number *</label>
+                    <input
+                      type="text"
+                      placeholder="XXXXX-XXXXXXX-X"
+                      className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                      style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>NTN Number (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Enter NTN number"
+                      className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                      style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                    />
+                  </div>
                 </div>
 
                 {/* Location */}

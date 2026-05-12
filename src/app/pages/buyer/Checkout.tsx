@@ -13,6 +13,17 @@ import { toast } from 'sonner';
 
 export default function Checkout() {
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
   const [step, setStep] = useState<'address' | 'payment' | 'review' | 'success'>('address');
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
@@ -20,8 +31,9 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'Cash On Delivery' | 'Bank Transfer' | 'Credit/Debit Card' | 'JazzCash' | 'Easypaisa'>('Cash On Delivery');
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [placedOrderId, setPlacedOrderId] = useState<string>('');
+  const [placedOrderTotal, setPlacedOrderTotal] = useState<number>(0);
 
-  const { data: cartItems, isLoading: cartLoading } = useCart();
+  const { data: cartItems, isLoading: cartLoading } = useCart({ enabled: isAuthenticated });
   const createOrderMutation = useCreateOrder();
 
   const [newAddress, setNewAddress] = useState({
@@ -52,8 +64,10 @@ export default function Checkout() {
   };
 
   useEffect(() => {
-    fetchAddresses();
-  }, []);
+    if (isAuthenticated) {
+      fetchAddresses();
+    }
+  }, [isAuthenticated]);
 
   const subtotal = cartItems?.reduce((sum, item) => sum + Number(item.totalPrice), 0) || 0;
   const shipping = 0;
@@ -75,6 +89,7 @@ export default function Checkout() {
       // The response structure might vary, but user provided a response example:
       // "transactionId": "TXN-..."
       setPlacedOrderId(response.data.transactionId || `#ORD-${Math.floor(Math.random() * 10000)}`);
+      setPlacedOrderTotal(total);
       setStep('success');
       window.scrollTo(0, 0);
     } catch (error) {
@@ -131,7 +146,7 @@ export default function Checkout() {
                 <div className="text-right">
                   <p className="text-sm mb-1" style={{ color: '#64748B' }}>Total Amount</p>
                   <p className="font-bold text-2xl" style={{ color: '#ef4136' }}>
-                    Rs. {total.toLocaleString()}
+                    Rs. {placedOrderTotal.toLocaleString()}
                   </p>
                 </div>
               </div>

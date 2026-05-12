@@ -542,15 +542,13 @@ export default function SuperAdminDashboard() {
   const [ordersPage, setOrdersPage] = useState(1);
   const ordersPerPage = 15;
 
-<<<<<<< Updated upstream
   const handleLogout = () => {
     localStorage.clear();
     router.push('/login');
   };
-=======
+
   const orders = ordersData?.data || [];
   const totalOrdersCount = ordersData?.total || 0;
->>>>>>> Stashed changes
 
   const navItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
