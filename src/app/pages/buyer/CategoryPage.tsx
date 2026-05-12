@@ -275,7 +275,7 @@ export default function CategoryPage() {
                           type="number"
                           placeholder="Min"
                           value={priceRange.min}
-                          onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                          onChange={(e) => setPriceRange({ ...priceRange, min: Number(e.target.value) })}
                           className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none"
                           style={{ borderColor: '#E2E8F0' }}
                         />
@@ -284,7 +284,7 @@ export default function CategoryPage() {
                           type="number"
                           placeholder="Max"
                           value={priceRange.max}
-                          onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                          onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
                           className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none"
                           style={{ borderColor: '#E2E8F0' }}
                         />

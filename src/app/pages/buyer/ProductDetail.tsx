@@ -73,6 +73,7 @@ export default function ProductDetail() {
 
   const handleCreateReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!product) return;
     if (newRating === 0) {
       toast.error('Please select a rating');
       return;
