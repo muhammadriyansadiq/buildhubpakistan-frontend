@@ -14,6 +14,7 @@ import { useCompleteBusinessStep3Mutation, useCompleteDocumentsStep4Mutation } f
 import { useCreateGigMutation, useGigs, useUpdateGigMutation, useDeleteGigMutation, useGigCategories } from '@/hooks/useGigs';
 import { useCategories } from '@/hooks/useProduct';
 import { toast } from 'sonner';
+import buildhubLogo from '@/imports/buildhub.png';
 
 type Section = 'gigs' | 'create-gig' | 'settings';
 type OnboardingStep = 'setup' | 'documents' | 'subscription' | 'payment';
@@ -295,15 +296,11 @@ export default function ServiceDashboard() {
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 flex flex-col shadow-xl" style={{ backgroundColor: '#0D2E5E' }}>
         <div className="p-6 border-b flex justify-center" style={{ borderColor: '#1E4080' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
-              <HardHat size={22} className="text-white" />
-            </div>
-            <div>
-              <div className="text-white font-bold text-sm">Build Hub</div>
-              <div className="text-xs" style={{ color: '#94A3B8' }}>Service Panel</div>
-            </div>
-          </div>
+          <img 
+            src={buildhubLogo.src} 
+            alt="Build Hub Logo" 
+            className="h-10 w-auto object-contain"
+          />
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -509,7 +506,7 @@ export default function ServiceDashboard() {
                     >
                       <option value="">Select category...</option>
                       {categories?.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.title || cat.name}</option>
+                        <option key={cat.id} value={cat.id}>{cat.title}</option>
                       ))}
                     </select>
                   </div>

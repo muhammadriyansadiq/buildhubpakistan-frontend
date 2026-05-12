@@ -52,10 +52,19 @@ export interface QuotationStats {
   Rejected: number;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  lastPage?: number;
+}
+
 // --- Quotation Hooks ---
 
 export const useQuotations = (filters?: any, options?: any) => {
-  return useQuery({
+  return useQuery<PaginatedResponse<Quotation>>({
     queryKey: ['quotations', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/quotations', { params: filters });
@@ -77,7 +86,7 @@ export const useQuotationDetails = (id: number | string | null) => {
 };
 
 export const useQuotationStats = (filters?: any, options?: any) => {
-  return useQuery({
+  return useQuery<QuotationStats>({
     queryKey: ['quotation-stats', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/quotations/stats', { params: filters });

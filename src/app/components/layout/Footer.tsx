@@ -2,18 +2,18 @@
 
 import { HardHat, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import logoSvg from '@/imports/svg-01.svg';
+import logoImg from '@/imports/buildhub.png';
 
 export default function Footer() {
   const router = useRouter();
   return (
-    <footer style={{ backgroundColor: '#000000' }} className="text-white mt-auto">
+    <footer style={{ backgroundColor: '#0d2e5e' }} className="text-white mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <div className="mb-4">
-              <img src={logoSvg.src} alt="BHP Logo" className="h-8 w-auto mb-2" />
+              <img src={logoImg.src} alt="BHP Logo" className="h-8 w-auto mb-2" />
             </div>
             <p className="text-sm text-white/60 leading-relaxed mb-4">
               Pakistan's premier B2B & B2C construction materials marketplace connecting vendors, service providers, and buyers.

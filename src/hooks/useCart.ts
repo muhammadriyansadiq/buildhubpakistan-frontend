@@ -24,7 +24,7 @@ export interface CartItem {
 }
 
 export const useCart = (options?: any) => {
-  return useQuery({
+  return useQuery<CartItem[]>({
     queryKey: ['cart'],
     queryFn: async () => {
       const { data } = await apiClient.get('/cart');

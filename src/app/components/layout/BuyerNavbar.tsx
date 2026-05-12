@@ -6,12 +6,14 @@ import {
   Search, ShoppingCart, Heart, User, Bell, Menu, X,
   MapPin, Phone, Package, Wrench, LogOut
 } from 'lucide-react';
-import logoSvg from '@/imports/buildhub.png';
+import logoImg from '@/imports/buildhub.png';
 import { useEffect } from 'react';
 import apiClient from '@/api/api-client';
 import { useCart } from '@/hooks/useCart';
 import { useProducts, Product } from '@/hooks/useProduct';
 import { useDebounce } from '@/hooks/useDebounce';
+import { toast } from 'sonner';
+import { CartItem } from '@/hooks/useCart';
 
 export default function BuyerNavbar() {
   const [user, setUser] = useState<any>(null);
@@ -19,7 +21,7 @@ export default function BuyerNavbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: cartItems } = useCart({ enabled: !!user });
-  const cartCount = cartItems?.length || 0;
+  const cartCount = (cartItems as CartItem[])?.length || 0;
   const [showSuggestions, setShowSuggestions] = useState(false);
   const router = useRouter();
 
@@ -78,7 +80,7 @@ export default function BuyerNavbar() {
   return (
     <header className="shadow-md sticky top-0 z-[100]">
       {/* Top bar */}
-      <div style={{ backgroundColor: '#3e3e3e' }} className="text-white py-2 px-4">
+      <div style={{ backgroundColor: '#0d2e5e' }} className="text-white py-2 px-4 border-b border-white/10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1 text-white/70">
@@ -106,12 +108,12 @@ export default function BuyerNavbar() {
       </div>
 
       {/* Main navbar */}
-      <div style={{ backgroundColor: '#000000' }}>
+      <div style={{ backgroundColor: '#0d2e5e' }}>
         <div className="max-w-7xl mx-auto py-3">
           <div className="flex items-center gap-4">
             {/* Logo */}
             <button onClick={() => router.push('/')} className="flex items-center gap-2 flex-shrink-0">
-              <img src={logoSvg.src} alt="BHP Logo" className="h-8 w-auto" />
+              <img src={logoImg.src} alt="BHP Logo" className="h-8 w-auto" />
             </button>
 
             <div className="flex-1 max-w-4xl relative">
@@ -296,7 +298,7 @@ export default function BuyerNavbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div style={{ backgroundColor: '#000000' }} className="md:hidden border-t border-white/10">
+        <div style={{ backgroundColor: '#0d2e5e' }} className="md:hidden border-t border-white/10">
           <div className="px-4 py-3 space-y-2">
             <button
               onClick={() => router.push('/buyer/dashboard/orders')}

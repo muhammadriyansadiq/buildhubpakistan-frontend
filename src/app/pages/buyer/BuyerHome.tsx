@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronRight, ChevronLeft, Star, ShoppingCart, Heart, Zap,
@@ -11,6 +11,14 @@ import { useAddToCartMutation } from '@/hooks/useCart';
 import { useGigs } from '@/hooks/useGigs';
 import { Loader2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import buildhubLogo from '../../../imports/buildhub.png';
+import bestwayLogo from '../../../imports/bestway.png';
+import luckyLogo from '../../../imports/lucky.png';
+import ittefaqLogo from '../../../imports/ittefaq.png';
+import princeLogo from '../../../imports/prince.png';
+import iciLogo from '../../../imports/ici.png';
+import abbLogo from '../../../imports/abb.webp';
+import stileLogo from '../../../imports/stile.png';
 
 const banners = [
   {
@@ -50,20 +58,29 @@ const banners = [
 
 
 const brands = [
-  { name: 'Bestway', cat: 'Cement', color: '#1a4f8b', logo: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=100&h=100&fit=crop' },
-  { name: 'Lucky', cat: 'Cement', color: '#008374', logo: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?q=80&w=100&h=100&fit=crop' },
-  { name: 'Ittefaq', cat: 'Steel', color: '#1e293b', logo: 'https://images.unsplash.com/photo-1516156008625-3a9d60677518?q=80&w=100&h=100&fit=crop' },
-  { name: 'ICI Dulux', cat: 'Paints', color: '#e11d48', logo: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?q=80&w=100&h=100&fit=crop' },
-  { name: 'Master', cat: 'Tiles', color: '#2563eb', logo: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=100&h=100&fit=crop' },
-  { name: 'Prince', cat: 'Pipes', color: '#16a34a', logo: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=100&h=100&fit=crop' },
-  { name: 'Bosch', cat: 'Tools', color: '#dc2626', logo: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?q=80&w=100&h=100&fit=crop' },
-  { name: 'ABB', cat: 'Electric', color: '#ea580c', logo: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=100&h=100&fit=crop' },
+  { name: 'Bestway', cat: 'Cement', color: '#1a4f8b', logo: bestwayLogo.src, local: true },
+  { name: 'Lucky', cat: 'Cement', color: '#008374', logo: luckyLogo.src, local: true },
+  { name: 'Ittefaq', cat: 'Steel', color: '#1e293b', logo: ittefaqLogo.src, local: true },
+  { name: 'ICI Dulux', cat: 'Paints', color: '#e11d48', logo: iciLogo.src, local: true },
+  { name: 'Shabbir Tiles', cat: 'Tiles', color: '#b91c1c', logo: stileLogo.src, local: true },
+  { name: 'Prince', cat: 'Pipes', color: '#16a34a', logo: princeLogo.src, local: true },
+  { name: 'Bosch', cat: 'Tools', color: '#dc2626', logo: 'https://ocsmedia.boschtools.com/media/professional/central_assets/bosch_logo/bosch.svg', local: true },
+  { name: 'ABB', cat: 'Electric', color: '#ea580c', logo: abbLogo.src, local: true },
 ];
 
 export default function BuyerHome() {
   const router = useRouter();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useState(() => {
+    // We use useEffect to set hasMounted
+  });
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   const { data: productsData, isLoading: productsLoading } = useProducts();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const { data: gigsData, isLoading: gigsLoading } = useGigs({ limit: 4 });
@@ -246,6 +263,7 @@ export default function BuyerHome() {
             <div className="flex items-center gap-2">
               <Flame size={20} style={{ color: '#ef4136' }} />
               <h2 className="font-bold text-xl" style={{ color: '#3e3e3e' }}>Featured Products</h2>
+              <img src={buildhubLogo.src} alt="BHP Logo" className="h-6 w-auto ml-1" />
             </div>
             <button
               onClick={() => router.push('/products')}
@@ -321,10 +339,10 @@ export default function BuyerHome() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '13px' }}>Rs. {currentPrice.toLocaleString()}</span>
+                          <span className="font-bold" style={{ color: '#3e3e3e', fontSize: '13px' }}>Rs. {hasMounted ? currentPrice.toLocaleString() : '...'}</span>
                           {showDiscount && (
                             <div style={{ color: '#94A3B8', fontSize: '11px', textDecoration: 'line-through' }}>
-                              Rs. {originalPrice.toLocaleString()}
+                              Rs. {hasMounted ? originalPrice.toLocaleString() : '...'}
                             </div>
                           )}
                         </div>
@@ -360,6 +378,7 @@ export default function BuyerHome() {
             <div className="flex items-center gap-2">
               <Wrench size={20} style={{ color: '#10B981' }} />
               <h2 className="font-bold text-xl" style={{ color: '#0D2E5E' }}>Top Services</h2>
+              <img src={buildhubLogo.src} alt="BHP Logo" className="h-6 w-auto ml-1" />
             </div>
             <button
               onClick={() => router.push('/services')}
@@ -400,7 +419,7 @@ export default function BuyerHome() {
                       <span className="text-xs flex items-center gap-1" style={{ color: '#F59E0B' }}>
                         <Star size={11} style={{ fill: '#F59E0B' }} /> 5.0
                       </span>
-                      <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>From Rs. {Number(gig.price).toLocaleString()}</span>
+                      <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>From Rs. {hasMounted ? Number(gig.price).toLocaleString() : '...'}</span>
                     </div>
                   </div>
                 </div>
@@ -434,12 +453,20 @@ export default function BuyerHome() {
                   style={{ borderColor: '#F1F5F9' }}
                 >
                   {/* Brand Visual */}
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md z-10 group-hover:scale-110 transition-transform duration-300"
-                    style={{ backgroundColor: brand.color }}
-                  >
-                    {brand.name.charAt(0)}
-                  </div>
+                  {(brand as any).local ? (
+                    <img 
+                      src={brand.logo} 
+                      alt={brand.name} 
+                      className="w-16 h-auto object-contain z-10 group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md z-10 group-hover:scale-110 transition-transform duration-300"
+                      style={{ backgroundColor: brand.color }}
+                    >
+                      {brand.name.charAt(0)}
+                    </div>
+                  )}
                   
                   {/* Subtle Context Image */}
                   <img 
@@ -466,7 +493,7 @@ export default function BuyerHome() {
         {/* CTA Vendor Banner */}
         <section
           className="rounded-2xl overflow-hidden relative"
-          style={{ background: 'linear-gradient(135deg, #3e3e3e 0%, #1a1a1a 100%)', padding: '40px 32px' }}
+          style={{ background: 'linear-gradient(135deg, #0d2e5e 0%, #1e4080 100%)', padding: '40px 32px' }}
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>

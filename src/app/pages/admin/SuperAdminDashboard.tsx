@@ -12,6 +12,7 @@ import {
   Plus, Save, Smile, Upload, Image as ImageIcon, Truck, Loader2,
   CreditCard, Hash, FileCheck, ArrowLeft, Globe, Landmark
 } from 'lucide-react';
+import buildhubPng from '../../../imports/buildhub.png';
 import DemoNav from '../../components/layout/DemoNav';
 import { useCategories, useProducts } from '@/hooks/useProduct';
 import { useUsers, useUserById, useUpdateUserMutation } from '@/hooks/useUser';
@@ -480,6 +481,29 @@ function UserDetailModal({ userId, userRole, onClose, onApprove, onReject }: {
 export default function SuperAdminDashboard() {
   const params = useParams();
   const router = useRouter();
+
+  // Add protection check
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    if (!token || !userStr) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userStr);
+      if (user.role !== 'SuperAdmin' && user.role !== 'Admin') {
+        toast.error('Unauthorized access');
+        router.push('/');
+      }
+    } catch (e) {
+      localStorage.clear();
+      router.push('/login');
+    }
+  }, [router]);
+
   const [activeSection, setActiveSection] = useState<Section>((params?.section as Section) || 'overview');
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -664,18 +688,14 @@ export default function SuperAdminDashboard() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F1F5F9' }}>
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 flex flex-col shadow-xl" style={{ backgroundColor: '#1E293B' }}>
+      <aside className="w-64 flex-shrink-0 flex flex-col shadow-xl" style={{ backgroundColor: '#0D2E5E' }}>
         {/* Logo */}
-        <div className="p-5 border-b" style={{ borderColor: '#334155' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
-              <Shield size={22} className="text-white" />
-            </div>
-            <div>
-              <div className="text-white font-bold text-sm">Build Hub</div>
-              <div className="text-xs" style={{ color: '#94A3B8' }}>Super Admin</div>
-            </div>
-          </div>
+        <div className="p-5 border-b flex justify-center" style={{ borderColor: '#1E4080' }}>
+          <img 
+            src={buildhubPng.src} 
+            alt="Build Hub Logo" 
+            className="h-10 w-auto object-contain"
+          />
         </div>
 
         {/* Nav */}
@@ -706,8 +726,8 @@ export default function SuperAdminDashboard() {
             );
           })}
 
-          <div className="pt-4 border-t mt-4" style={{ borderColor: '#334155' }}>
-            <p className="text-xs font-semibold mb-3 px-3" style={{ color: '#64748B' }}>SYSTEM</p>
+          <div className="pt-4 border-t mt-4" style={{ borderColor: '#1E4080' }}>
+            <p className="text-xs font-semibold mb-3 px-3" style={{ color: '#94A3B8' }}>SYSTEM</p>
             <button
               onClick={() => navigate2('settings')}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm"
@@ -726,7 +746,7 @@ export default function SuperAdminDashboard() {
         </nav>
 
         {/* Admin Profile */}
-        <div className="p-4 border-t" style={{ borderColor: '#334155' }}>
+        <div className="p-4 border-t" style={{ borderColor: '#1E4080' }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef4136' }}>
               <span className="text-white font-bold text-sm">SA</span>

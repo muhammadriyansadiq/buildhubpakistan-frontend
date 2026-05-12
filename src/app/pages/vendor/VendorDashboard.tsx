@@ -616,7 +616,7 @@ export default function VendorDashboard() {
         {/* Logo */}
         <div className="p-6 border-b flex justify-center" style={{ borderColor: '#1E4080' }}>
           <img
-            src={typeof BuildHubLogo === 'string' ? BuildHubLogo : BuildHubLogo.src}
+            src={BuildHubLogo.src}
             alt="Build Hub Logo"
             className="h-10 w-auto object-contain"
           />

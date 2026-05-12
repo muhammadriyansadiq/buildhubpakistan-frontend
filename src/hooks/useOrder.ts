@@ -95,7 +95,7 @@ export const useOrderDetails = (id: string | number) => {
 };
 
 export const useOrderStats = (filters?: any, options?: any) => {
-  return useQuery({
+  return useQuery<OrderStats>({
     queryKey: ['order-stats', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/orders/stats', { params: filters });

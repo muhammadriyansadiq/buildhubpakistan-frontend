@@ -48,8 +48,10 @@ const initialCartItems = [
 export default function Cart() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -99,7 +101,7 @@ export default function Cart() {
     }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
+  const subtotal = (cartItems || []).reduce((sum: number, item: any) => sum + Number(item.product.price) * item.quantity, 0);
   const savings = 0; // The mock used originalPrice - price, but API doesn't provide originalPrice in cart response directly.
   const discount = appliedCoupon ? subtotal * 0.1 : 0;
   const shipping = subtotal > 50000 || subtotal === 0 ? 0 : 1500;
@@ -240,7 +242,7 @@ export default function Cart() {
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="font-bold" style={{ color: '#3e3e3e' }}>
-                              Rs. {Number(item.product.price).toLocaleString()}
+                              Rs. {hasMounted ? Number(item.product.price).toLocaleString() : '...'}
                             </span>
                           </div>
                         </div>
@@ -277,7 +279,7 @@ export default function Cart() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg" style={{ color: '#3e3e3e' }}>
-                            Rs. {(Number(item.product.price) * item.quantity).toLocaleString()}
+                            Rs. {hasMounted ? (Number(item.product.price) * item.quantity).toLocaleString() : '...'}
                           </p>
                         </div>
                       </div>
@@ -326,7 +328,7 @@ export default function Cart() {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center justify-between text-sm">
                   <span style={{ color: '#64748B' }}>Subtotal ({cartItems.length} items)</span>
-                  <span style={{ color: '#3e3e3e' }}>Rs. {subtotal.toLocaleString()}</span>
+                  <span style={{ color: '#3e3e3e' }}>Rs. {hasMounted ? subtotal.toLocaleString() : '...'}</span>
                 </div>
                 {savings > 0 && (
                   <div className="flex items-center justify-between text-sm">
@@ -350,7 +352,7 @@ export default function Cart() {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-lg" style={{ color: '#3e3e3e' }}>Total</span>
                     <span className="font-bold text-2xl" style={{ color: '#ef4136' }}>
-                      Rs. {total.toLocaleString()}
+                      Rs. {hasMounted ? total.toLocaleString() : '...'}
                     </span>
                   </div>
                 </div>

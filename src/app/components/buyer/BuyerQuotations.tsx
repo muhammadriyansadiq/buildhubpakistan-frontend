@@ -34,9 +34,11 @@ export default function BuyerQuotations({
 }: BuyerQuotationsProps) {
   const router = useRouter();
   const [userId, setUserId] = useReactState<number | null>(null);
+  const [hasMounted, setHasMounted] = useReactState(false);
 
 
   useEffect(() => {
+    setHasMounted(true);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.id) setUserId(user.id);
   }, []);
@@ -168,13 +170,13 @@ export default function BuyerQuotations({
         id: 'initial',
         senderId: rfq.userId,
         text: `Required Quantity: ${rfq.requiredQuantity} ${rfq.product?.unit || 'Units'}\n\nRequirement: ${rfq.additionalRequirement || 'Initial requirement request.'}`,
-        timestamp: new Date(rfq.createdAt).toLocaleString(),
+        timestamp: hasMounted ? new Date(rfq.createdAt).toLocaleString() : '...',
       },
       ...(rfq.responses || []).map((res: any) => ({
         id: res.id,
         senderId: res.userId,
         text: res.reply || 'Here is our response for your request.',
-        timestamp: new Date(res.createdAt).toLocaleString(),
+        timestamp: hasMounted ? new Date(res.createdAt).toLocaleString() : '...',
         basePrice: res.price,
       }))
     ];
@@ -233,7 +235,7 @@ export default function BuyerQuotations({
             <div className="flex items-center gap-2 whitespace-nowrap">
               <Calendar size={14} className="text-slate-400" />
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Date:</span>
-              <span className="text-xs font-semibold text-slate-600">{new Date(rfq.createdAt).toLocaleDateString()}</span>
+              <span className="text-xs font-semibold text-slate-600">{hasMounted ? new Date(rfq.createdAt).toLocaleDateString() : '...'}</span>
             </div>
             <div className="flex items-center gap-2 whitespace-nowrap">
               <MapPin size={14} className="text-slate-400" />
@@ -279,7 +281,7 @@ export default function BuyerQuotations({
                         {'basePrice' in msg && msg.basePrice && (
                           <div className="mt-2 flex items-center justify-between gap-3 p-2 bg-slate-900 rounded-lg text-white">
                             <span className="text-[9px] font-bold uppercase tracking-tighter opacity-70">Quote:</span>
-                            <span className="text-sm font-black text-red-400">Rs. {Number((msg as any).basePrice).toLocaleString()}</span>
+                            <span className="text-sm font-black text-red-400">Rs. {hasMounted ? Number((msg as any).basePrice).toLocaleString() : '...'}</span>
                           </div>
                         )}
 
@@ -599,7 +601,7 @@ export default function BuyerQuotations({
                         <MessageSquare size={14} className="text-slate-300" /> {rfq.responses?.length || 0} Messages
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                        <Calendar size={14} className="text-slate-300" /> {new Date(rfq.updatedAt).toLocaleDateString()}
+                        <Calendar size={14} className="text-slate-300" /> {hasMounted ? new Date(rfq.updatedAt).toLocaleDateString() : '...'}
                       </div>
                     </div>
 
@@ -610,7 +612,7 @@ export default function BuyerQuotations({
                     {quotedPrice && (
                       <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-200">
                         <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Latest Quote:</span>
-                        <span className="text-lg font-black text-red-500">Rs. {Number(quotedPrice).toLocaleString()}</span>
+                        <span className="text-lg font-black text-red-500">Rs. {hasMounted ? Number(quotedPrice).toLocaleString() : '...'}</span>
                       </div>
                     )}
                   </div>

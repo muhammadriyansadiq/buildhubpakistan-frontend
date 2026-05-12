@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HardHat, Eye, EyeOff, Phone, Lock, ArrowRight, Building2 } from 'lucide-react';
 import DemoNav from '../../components/layout/DemoNav';
-import logoSvg from '../../../imports/svg-01.svg';
-import buildhubLogo from '../../../imports/buildhub.png';
+import logoImg from '../../../imports/buildhub.png';
 import { useLoginMutation } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -26,7 +25,7 @@ export default function LoginPage() {
         if (user && user.role) {
           if (user.role === 'Vendor') router.push('/vendor/dashboard');
           else if (user.role === 'Service Provider') router.push('/service/dashboard');
-          else if (user.role === 'SuperAdmin') router.push('/admin/super/overview');
+          else if (user.role === 'SuperAdmin' || user.role === 'Admin') router.push('/admin/super/overview');
           else router.push('/');
           return;
         }
@@ -69,6 +68,7 @@ export default function LoginPage() {
         const userRole = response.data.user.role;
         if (userRole === 'Vendor') router.push('/vendor/dashboard');
         else if (userRole === 'Service Provider') router.push('/service/dashboard');
+        else if (userRole === 'SuperAdmin' || userRole === 'Admin') router.push('/admin/super/overview');
         else router.push('/');
       }
     } catch (err: any) {
@@ -84,9 +84,9 @@ export default function LoginPage() {
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="p-8 pb-6" style={{ background: 'linear-gradient(135deg, #000000 0%, #3e3e3e 100%)' }}>
+            <div className="p-8 pb-6" style={{ background: 'linear-gradient(135deg, #0d2e5e 0%, #1e4080 100%)' }}>
               <div className="flex items-center justify-center mb-6">
-                <img src={buildhubLogo.src} alt="BHP Logo" className="h-10 w-auto" />
+                <img src={logoImg.src} alt="BHP Logo" className="h-10 w-auto" />
               </div>
               <h1 className="text-white text-2xl font-bold">Welcome back</h1>
               <p className="text-white/60 text-sm mt-1">Sign in to your account to continue</p>

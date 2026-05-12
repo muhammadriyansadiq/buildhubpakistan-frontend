@@ -9,7 +9,7 @@ import {
   Send, Paperclip, Eye, Download, Plus, Trash2, Edit2, Home,
   Building, Phone, Mail, Map, Camera, Save, X, Loader2
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState as useReactState } from 'react';
 import apiClient from '@/api/api-client';
 import { toast } from 'sonner';
 import BuyerQuotations from '@/app/components/buyer/BuyerQuotations';
@@ -88,8 +88,10 @@ export default function BuyerDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [userId, setUserId] = useState<number | null>(null);
+  const [hasMounted, setHasMounted] = useReactState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.id) setUserId(user.id);
   }, []);
@@ -125,7 +127,7 @@ export default function BuyerDashboard() {
     const stats = [
       { label: 'Total Orders', value: orders.length.toString(), change: 'Lifetime activity', color: '#ef4136', icon: Package },
       { label: 'Active Quotations', value: rfqs.length.toString(), change: 'Pending & Quoted', color: '#2563EB', icon: MessageSquare },
-      { label: 'Total Spent', value: `Rs. ${orders.reduce((acc, o) => acc + Number(o.totalAmount), 0).toLocaleString()}`, change: 'Total volume', color: '#16A34A', icon: TrendingUp },
+      { label: 'Total Spent', value: hasMounted ? `Rs. ${orders.reduce((acc, o) => acc + Number(o.totalAmount), 0).toLocaleString()}` : "...", change: 'Total volume', color: '#16A34A', icon: TrendingUp },
       { label: 'Wishlist Items', value: '0', change: 'Keep track of items', color: '#F59E0B', icon: Heart },
     ];
 
@@ -195,10 +197,10 @@ export default function BuyerDashboard() {
                         <p className="text-sm mb-1" style={{ color: '#64748B' }}>
                           {order.items?.length || 0} items • {order.items?.[0]?.product?.brand || 'BHP Product'}
                         </p>
-                        <p className="text-xs" style={{ color: '#94A3B8' }}>Ordered on {new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p className="text-xs" style={{ color: '#94A3B8' }}>Ordered on {hasMounted ? new Date(order.createdAt).toLocaleDateString() : '...'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg mb-1" style={{ color: '#3e3e3e' }}>Rs. {Number(order.totalAmount).toLocaleString()}</p>
+                        <p className="font-bold text-lg mb-1" style={{ color: '#3e3e3e' }}>Rs. {hasMounted ? Number(order.totalAmount).toLocaleString() : '...'}</p>
                         <button className="text-sm font-medium flex items-center gap-1" style={{ color: '#ef4136' }}>
                           Track Order <ChevronRight size={14} />
                         </button>

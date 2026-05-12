@@ -7,7 +7,7 @@ import {
   Phone, Mail, Lock, Shield, CheckCircle2, ArrowLeft, RefreshCw
 } from 'lucide-react';
 import DemoNav from '../../components/layout/DemoNav';
-import logoSvg from '../../../imports/svg-01.svg';
+import logoImg from '../../../imports/buildhub.png';
 import { toast } from 'sonner';
 import { useRegisterMutation, useVerifyOtpMutation } from '../../../hooks/useAuth';
 
@@ -259,7 +259,7 @@ export default function RegisterPage() {
       <DemoNav />
 
       {/* Progress bar */}
-      <div style={{ backgroundColor: '#3e3e3e' }} className="h-1">
+      <div style={{ backgroundColor: '#0d2e5e' }} className="h-1">
         <div
           className="h-full transition-all duration-500"
           style={{
@@ -274,7 +274,7 @@ export default function RegisterPage() {
           {/* Logo */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {/* <img src={logoSvg} alt="BHP Logo" className="h-10 w-auto" /> */}
-            <img src={logoSvg.src} alt="BHP Logo" className="h-10 w-auto" />
+            <img src={logoImg.src} alt="BHP Logo" className="h-10 w-auto" />
 
           </div>
 

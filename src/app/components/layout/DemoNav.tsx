@@ -56,7 +56,7 @@ export default function DemoNav() {
 
   return (
     <div className="relative z-50">
-      <div style={{ backgroundColor: '#000000' }} className="px-4 py-2 flex items-center justify-between">
+      {/* <div style={{ backgroundColor: '#000000' }} className="px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-white/60">Build Hub Pakistan — UI Demo</span>
           <span className="px-2 py-0.5 rounded text-xs text-white" style={{ backgroundColor: '#ef4136' }}>
@@ -72,7 +72,7 @@ export default function DemoNav() {
           Navigate Screens
           <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
-      </div>
+      </div> */}
 
       {open && (
         <div

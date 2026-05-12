@@ -14,8 +14,10 @@ import { toast } from 'sonner';
 export default function Checkout() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -136,17 +138,17 @@ export default function Checkout() {
                 <div className="text-left">
                   <p className="text-sm mb-1" style={{ color: '#64748B' }}>Estimated Delivery</p>
                   <p className="font-bold text-lg" style={{ color: '#3e3e3e' }}>
-                    {new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+                    {hasMounted ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric'
-                    })}
+                    }) : '...'}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm mb-1" style={{ color: '#64748B' }}>Total Amount</p>
                   <p className="font-bold text-2xl" style={{ color: '#ef4136' }}>
-                    Rs. {placedOrderTotal.toLocaleString()}
+                    Rs. {hasMounted ? placedOrderTotal.toLocaleString() : '...'}
                   </p>
                 </div>
               </div>
