@@ -60,7 +60,7 @@ export const useCategories = (options?: any) => {
   return useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/categories');
+      const { data } = await apiClient.get('/api/categories');
       return data.data as Category[];
     },
     ...options,
@@ -72,7 +72,7 @@ export const useProducts = (filters?: any, options?: any) => {
   return useQuery<Product[]>({
     queryKey: ['products', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/products', { params: filters });
+      const { data } = await apiClient.get('/api/products', { params: filters });
       return data.data as Product[];
     },
     ...options,
@@ -83,7 +83,7 @@ export const useProduct = (id: number) => {
   return useQuery<Product>({
     queryKey: ['product', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/products/${id}`);
+      const { data } = await apiClient.get(`/api/products/${id}`);
       return data.data as Product;
     },
     enabled: !!id,
@@ -94,7 +94,7 @@ export const useCreateProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: FormData) => {
-      const { data } = await apiClient.post('/products', payload, {
+      const { data } = await apiClient.post('/api/products', payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -109,7 +109,7 @@ export const useUpdateProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: number; payload: FormData }) => {
-      const { data } = await apiClient.put(`/products/${id}`, payload, {
+      const { data } = await apiClient.put(`/api/products/${id}`, payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -124,7 +124,7 @@ export const useDeleteProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      const { data } = await apiClient.delete(`/products/${id}`);
+      const { data } = await apiClient.delete(`/api/products/${id}`);
       return data;
     },
     onSuccess: () => {
@@ -137,7 +137,7 @@ export const useUpdateStockStatusMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ productIds, stockStatus }: { productIds: number[]; stockStatus: string }) => {
-      const { data } = await apiClient.post('/products/stock-status', {
+      const { data } = await apiClient.post('/api/products/stock-status', {
         productId: productIds,
         stockStatus: stockStatus,
       });

@@ -76,7 +76,7 @@ export const useOrders = (filters?: any, options?: any) => {
   return useQuery<OrdersResponse>({
     queryKey: ['orders', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/orders', { params: filters });
+      const { data } = await apiClient.get('/api/orders', { params: filters });
       return data;
     },
     ...options
@@ -87,7 +87,7 @@ export const useOrderDetails = (id: string | number) => {
   return useQuery({
     queryKey: ['order', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/orders/${id}`);
+      const { data } = await apiClient.get(`/api/orders/${id}`);
       return data.data as Order;
     },
     enabled: !!id,
@@ -98,7 +98,7 @@ export const useOrderStats = (filters?: any, options?: any) => {
   return useQuery<OrderStats>({
     queryKey: ['order-stats', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/orders/stats', { params: filters });
+      const { data } = await apiClient.get('/api/orders/stats', { params: filters });
       return data.data as OrderStats;
     },
     ...options
@@ -109,7 +109,7 @@ export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const { data } = await apiClient.patch(`/orders/status/${id}`, { orderStatus: status });
+      const { data } = await apiClient.patch(`/api/orders/status/${id}`, { orderStatus: status });
       return data;
     },
     onSuccess: () => {
@@ -125,7 +125,7 @@ export const useUploadOrderImage = () => {
     mutationFn: async ({ id, image }: { id: number; image: File }) => {
       const formData = new FormData();
       formData.append('vendorImage', image);
-      const { data } = await apiClient.patch(`/orders/vendor-image/${id}`, formData, {
+      const { data } = await apiClient.patch(`/api/orders/vendor-image/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -156,7 +156,7 @@ export const useCreateOrder = () => {
         formData.append('receipt', payload.receipt);
       }
       
-      const { data } = await apiClient.post('/orders', formData, {
+      const { data } = await apiClient.post('/api/orders', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;

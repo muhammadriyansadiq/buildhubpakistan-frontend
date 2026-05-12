@@ -11,7 +11,7 @@ export interface RegisterStep1Payload {
 
 const registerStep1 = async (payload: RegisterStep1Payload) => {
   // Use the axios instance which has the interceptors configured
-  const { data } = await apiClient.post('/auth/register/step1', payload);
+  const { data } = await apiClient.post('/api/auth/register/step1', payload);
   return data;
 };
 
@@ -27,7 +27,7 @@ export interface VerifyOtpStep2Payload {
 }
 
 const verifyOtpStep2 = async (payload: VerifyOtpStep2Payload) => {
-  const { data } = await apiClient.post('/auth/register/step2', payload);
+  const { data } = await apiClient.post('/api/auth/register/step2', payload);
   return data;
 };
 
@@ -63,7 +63,7 @@ const completeBusinessStep3 = async (payload: CompleteBusinessStep3Payload) => {
   if (payload.cnicNumber) formData.append('cnicNumber', payload.cnicNumber);
   if (payload.ntnNumber) formData.append('ntnNumber', payload.ntnNumber);
 
-  const { data } = await apiClient.post('/auth/register/step3', formData, {
+  const { data } = await apiClient.post('/api/auth/register/step3', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -85,7 +85,7 @@ export interface CompleteDocumentsStep4Payload {
 }
 
 const completeDocumentsStep4 = async (payload: CompleteDocumentsStep4Payload) => {
-  const { data } = await apiClient.post('/auth/register/step4', payload);
+  const { data } = await apiClient.post('/api/auth/register/step4', payload);
   return data;
 };
 
@@ -101,7 +101,7 @@ export interface LoginPayload {
 }
 
 const login = async (payload: LoginPayload) => {
-  const { data } = await apiClient.post('/auth/login', payload);
+  const { data } = await apiClient.post('/api/auth/login', payload);
   return data;
 };
 
@@ -115,7 +115,7 @@ export const useUser = (id: string | number) => {
   return useQuery({
     queryKey: ['user', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/users/${id}`);
+      const { data } = await apiClient.get(`/api/users/${id}`);
       return data.data;
     },
     enabled: !!id,

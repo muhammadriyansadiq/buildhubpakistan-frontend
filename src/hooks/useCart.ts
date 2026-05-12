@@ -27,7 +27,7 @@ export const useCart = (options?: any) => {
   return useQuery<CartItem[]>({
     queryKey: ['cart'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/cart');
+      const { data } = await apiClient.get('/api/cart');
       return data.data as CartItem[];
     },
     ...options
@@ -38,7 +38,7 @@ export const useAddToCartMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ productId, quantity }: { productId: number; quantity: number }) => {
-      const { data } = await apiClient.post('/cart', { productId, quantity });
+      const { data } = await apiClient.post('/api/cart', { productId, quantity });
       return data;
     },
     onSuccess: () => {
@@ -51,7 +51,7 @@ export const useUpdateCartQuantityMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, quantity }: { id: number; quantity: number }) => {
-      const { data } = await apiClient.put(`/cart/${id}`, { quantity });
+      const { data } = await apiClient.put(`/api/cart/${id}`, { quantity });
       return data;
     },
     onSuccess: () => {
@@ -64,7 +64,7 @@ export const useRemoveFromCartMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      const { data } = await apiClient.delete(`/cart/${id}`);
+      const { data } = await apiClient.delete(`/api/cart/${id}`);
       return data;
     },
     onSuccess: () => {

@@ -22,7 +22,7 @@ export const useReviews = (filters?: { userId?: number; productId?: number; sell
   return useQuery({
     queryKey: ['reviews', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/reviews', { params: filters });
+      const { data } = await apiClient.get('/api/reviews', { params: filters });
       return data.data as Review[];
     },
   });
@@ -32,7 +32,7 @@ export const useCreateReviewMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { productId: number; sellerId: number; rating: number; comment: string }) => {
-      const { data } = await apiClient.post('/reviews', payload);
+      const { data } = await apiClient.post('/api/reviews', payload);
       return data;
     },
     onSuccess: () => {

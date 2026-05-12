@@ -17,7 +17,7 @@ export const useAddresses = () => {
   return useQuery({
     queryKey: ['addresses'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/addresses');
+      const { data } = await apiClient.get('/api/addresses');
       return data.data as Address[];
     },
   });
@@ -27,7 +27,7 @@ export const useCreateAddress = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (address: Omit<Address, 'id'>) => {
-      const { data } = await apiClient.post('/addresses', address);
+      const { data } = await apiClient.post('/api/addresses', address);
       return data;
     },
     onSuccess: () => {

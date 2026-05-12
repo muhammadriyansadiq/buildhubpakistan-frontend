@@ -67,7 +67,7 @@ export const useQuotations = (filters?: any, options?: any) => {
   return useQuery<PaginatedResponse<Quotation>>({
     queryKey: ['quotations', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/quotations', { params: filters });
+      const { data } = await apiClient.get('/api/quotations', { params: filters });
       return data; // Returns the full pagination object
     },
     ...options
@@ -78,7 +78,7 @@ export const useQuotationDetails = (id: number | string | null) => {
   return useQuery({
     queryKey: ['quotation', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/quotations/${id}`);
+      const { data } = await apiClient.get(`/api/quotations/${id}`);
       return data.data as Quotation;
     },
     enabled: !!id,
@@ -89,7 +89,7 @@ export const useQuotationStats = (filters?: any, options?: any) => {
   return useQuery<QuotationStats>({
     queryKey: ['quotation-stats', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/quotations/stats', { params: filters });
+      const { data } = await apiClient.get('/api/quotations/stats', { params: filters });
       return data.data as QuotationStats;
     },
     ...options
@@ -100,7 +100,7 @@ export const useUpdateQuotationStatusMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: number | string; status: string }) => {
-      const { data } = await apiClient.patch(`/quotations/${id}`, {
+      const { data } = await apiClient.patch(`/api/quotations/${id}`, {
         status: status,
       });
       return data;
@@ -118,7 +118,7 @@ export const useRespondToQuotationMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, price, reply }: { id: number | string; price: number; reply: string }) => {
-      const { data } = await apiClient.post(`/quotations/response/${id}`, {
+      const { data } = await apiClient.post(`/api/quotations/response/${id}`, {
         price,
         reply,
       });
@@ -134,7 +134,7 @@ export const useCreateQuotationMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { requiredQuantity: number; deliveryLocation: string; additionalRequirement?: string; productId?: number }) => {
-      const { data } = await apiClient.post('/quotations', payload);
+      const { data } = await apiClient.post('/api/quotations', payload);
       return data;
     },
     onSuccess: () => {

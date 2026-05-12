@@ -48,7 +48,7 @@ export const useUsers = (filters: { role?: string; limit?: number; page?: number
   return useQuery<UsersResponse>({
     queryKey: ['users', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/users', { params: filters });
+      const { data } = await apiClient.get('/api/users', { params: filters });
       return data;
     },
     ...options
@@ -59,7 +59,7 @@ export const useUserById = (id: number | null) => {
   return useQuery<{ statusCode: number; data: User; message: string; success: boolean }>({
     queryKey: ['user', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/users/${id}`);
+      const { data } = await apiClient.get(`/api/users/${id}`);
       return data;
     },
     enabled: !!id,
@@ -70,7 +70,7 @@ export const useUpdateUserMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: number | string; payload: any }) => {
-      const { data } = await apiClient.put(`/users/${id}`, payload);
+      const { data } = await apiClient.put(`/api/users/${id}`, payload);
       return data;
     },
     onSuccess: () => {

@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { ENV } from '../config/env';
 
 const apiClient = axios.create({
-  baseURL: ENV.API_BASE_URL,
+  baseURL: '', // Using empty baseURL and prefixing hooks with /api for proxying
   headers: {
     'Content-Type': 'application/json',
   },

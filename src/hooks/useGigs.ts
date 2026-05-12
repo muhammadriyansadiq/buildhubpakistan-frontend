@@ -56,7 +56,7 @@ export const useCreateGigMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: FormData) => {
-      const { data } = await apiClient.post('/gigs', payload, {
+      const { data } = await apiClient.post('/api/gigs', payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -71,7 +71,7 @@ export const useUpdateGigMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: number | string; payload: FormData }) => {
-      const { data } = await apiClient.put(`/gigs/${id}`, payload, {
+      const { data } = await apiClient.put(`/api/gigs/${id}`, payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -86,7 +86,7 @@ export const useDeleteGigMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number | string) => {
-      const { data } = await apiClient.delete(`/gigs/${id}`);
+      const { data } = await apiClient.delete(`/api/gigs/${id}`);
       return data;
     },
     onSuccess: () => {
@@ -99,7 +99,7 @@ export const useGigs = (filters?: any) => {
   return useQuery<GigsResponse>({
     queryKey: ['gigs', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get('/gigs', { params: filters });
+      const { data } = await apiClient.get('/api/gigs', { params: filters });
       return data;
     },
   });
@@ -109,7 +109,7 @@ export const useGig = (id: number | string | undefined) => {
   return useQuery<{ data: Gig }>({
     queryKey: ['gig', id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/gigs/${id}`);
+      const { data } = await apiClient.get(`/api/gigs/${id}`);
       return data;
     },
     enabled: !!id,
@@ -120,7 +120,7 @@ export const useGigCategories = () => {
   return useQuery<GigCategory[]>({
     queryKey: ['gig-categories'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/gig-categories');
+      const { data } = await apiClient.get('/api/gig-categories');
       return data.data;
     },
   });

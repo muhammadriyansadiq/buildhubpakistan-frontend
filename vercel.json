@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://builder-pi-two.vercel.app/api/:path*"
+    }
+  ]
+}
