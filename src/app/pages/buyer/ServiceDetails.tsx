@@ -4,28 +4,29 @@ import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Star, MapPin, CheckCircle2, MessageCircle, Phone, Shield,
-  Clock, Award, Briefcase, Users, ChevronRight, Share2, Heart, ExternalLink
+  Clock, Award, Briefcase, Users, ChevronRight, Share2, Heart, ExternalLink, Loader2, SearchX
 } from 'lucide-react';
+import { useGig } from '@/hooks/useGigs';
 
 // Mock service gigs data (in a real app, this would come from API)
 const allServiceGigs = [
-  { 
-    id: 1, 
-    title: 'Structural Engineering Design & Consultancy', 
-    category: 'Engineering', 
-    price: 15000, 
-    unit: 'per project', 
-    rating: 4.8, 
-    reviews: 34, 
-    status: 'active', 
-    description: 'Complete structural analysis and design for residential and commercial buildings. I have 10 years of experience in structural engineering and have completed 200+ projects successfully. Services include:\n\n• Structural design and analysis\n• Foundation design\n• Load calculations\n• Building safety assessments\n• Construction supervision\n\nAll work is done according to Pakistan Building Code and international standards. I provide detailed drawings, calculations, and reports.', 
-    provider: 'Eng. Ahmad Raza', 
-    whatsapp: '+923001234567', 
-    phone: '+923001234567', 
-    location: 'Lahore', 
-    img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=800&h=500&fit=crop', 
-    experience: '10 years', 
-    completedProjects: 200, 
+  {
+    id: 1,
+    title: 'Structural Engineering Design & Consultancy',
+    category: 'Engineering',
+    price: 15000,
+    unit: 'per project',
+    rating: 4.8,
+    reviews: 34,
+    status: 'active',
+    description: 'Complete structural analysis and design for residential and commercial buildings. I have 10 years of experience in structural engineering and have completed 200+ projects successfully. Services include:\n\n• Structural design and analysis\n• Foundation design\n• Load calculations\n• Building safety assessments\n• Construction supervision\n\nAll work is done according to Pakistan Building Code and international standards. I provide detailed drawings, calculations, and reports.',
+    provider: 'Eng. Ahmad Raza',
+    whatsapp: '+923001234567',
+    phone: '+923001234567',
+    location: 'Lahore',
+    img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=800&h=500&fit=crop',
+    experience: '10 years',
+    completedProjects: 200,
     responseTime: '2 hours',
     skills: ['AutoCAD', 'ETABS', 'SAP2000', 'Structural Analysis']
   },
@@ -36,12 +37,21 @@ const allServiceGigs = [
 
 export default function ServiceDetails() {
   const params = useParams();
-  const id = params?.id;
+  const id = params?.id as string;
   const router = useRouter();
   const [showPhoneNumber, setShowPhoneNumber] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
-  const service = allServiceGigs.find(s => s.id === Number(id));
+  const { data: gigData, isLoading } = useGig(id);
+  const service = gigData?.data;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <Loader2 size={40} className="animate-spin" style={{ color: '#ef4136' }} />
+      </div>
+    );
+  }
 
   if (!service) {
     return (
@@ -52,9 +62,9 @@ export default function ServiceDetails() {
           </div>
           <h2 className="text-2xl font-bold mb-3 text-[#1E293B]">Service Not Found</h2>
           <p className="text-gray-500 mb-8">The service you are looking for might have been removed or is temporarily unavailable.</p>
-          <button 
-            onClick={() => router.push('/services')} 
-            className="w-full py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]" 
+          <button
+            onClick={() => router.push('/services')}
+            className="w-full py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
             style={{ backgroundColor: '#ef4136' }}
           >
             Browse All Services
@@ -64,13 +74,16 @@ export default function ServiceDetails() {
     );
   }
 
+  const providerName = service.user?.fullName || 'Verified Provider';
+  const providerPhone = service.user?.phone || '+923000000000';
+
   const handleWhatsApp = () => {
-    const message = encodeURIComponent(`Hi ${service.provider}! I'm interested in your service: ${service.title} listed on Build Hub.`);
-    window.open(`https://wa.me/${service.whatsapp.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+    const message = encodeURIComponent(`Hi ${providerName}! I'm interested in your service: ${service.title} listed on Build Hub.`);
+    window.open(`https://wa.me/${providerPhone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
   };
 
   const handleCall = () => {
-    window.location.href = `tel:${service.phone}`;
+    window.location.href = `tel:${providerPhone}`;
   };
 
   return (
@@ -87,12 +100,12 @@ export default function ServiceDetails() {
             </div>
             Back to Services
           </button>
-          
+
           <div className="flex items-center gap-3">
             <button className="p-2 rounded-full hover:bg-slate-50 text-[#64748B] transition-colors">
               <Share2 size={20} />
             </button>
-            <button 
+            <button
               onClick={() => setIsWishlisted(!isWishlisted)}
               className="p-2 rounded-full hover:bg-slate-50 transition-colors"
             >
@@ -104,25 +117,20 @@ export default function ServiceDetails() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Main Content (8 cols) */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* Hero Card */}
             <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
               <div className="relative aspect-[16/9] md:aspect-[21/9]">
-                <img src={service.img} alt={service.title} className="w-full h-full object-cover" />
+                <img src={service.images?.[0] || 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=800&h=500&fit=crop'} alt={service.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0D2E5E]/90 via-[#0D2E5E]/20 to-transparent" />
-                
+
                 <div className="absolute top-6 left-6 flex gap-2">
                   <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md bg-white/20 border border-white/30">
-                    {service.category}
+                    {service.category?.title || 'Service'}
                   </span>
-                  {service.reviews > 30 && (
-                    <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-white shadow-lg bg-[#ef4136]">
-                      Top Rated
-                    </span>
-                  )}
                 </div>
 
                 <div className="absolute bottom-8 left-8 right-8">
@@ -132,12 +140,12 @@ export default function ServiceDetails() {
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 text-white/90">
                       <Star size={20} className="text-yellow-400 fill-yellow-400" />
-                      <span className="font-bold text-lg">{service.rating}</span>
-                      <span className="text-sm opacity-70">({service.reviews} reviews)</span>
+                      <span className="font-bold text-lg">5.0</span>
+                      <span className="text-sm opacity-70">(0 reviews)</span>
                     </div>
                     <div className="flex items-center gap-2 text-white/90">
                       <MapPin size={20} className="text-red-400" />
-                      <span className="font-bold">{service.location}, Pakistan</span>
+                      <span className="font-bold">{service.city || 'Pakistan'}</span>
                     </div>
                   </div>
                 </div>
@@ -164,10 +172,10 @@ export default function ServiceDetails() {
                   <h2 className="font-black text-xl mb-6 text-[#0D2E5E]">Provider Portfolio</h2>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { label: 'Experience', value: service.experience, icon: Award, color: '#ef4136', bg: 'bg-red-50' },
-                      { label: 'Completed', value: service.completedProjects + '+', icon: CheckCircle2, color: '#10B981', bg: 'bg-emerald-50' },
-                      { label: 'Response', value: service.responseTime, icon: Clock, color: '#3B82F6', bg: 'bg-blue-50' },
-                      { label: 'Rating', value: service.rating, icon: Star, color: '#F59E0B', bg: 'bg-amber-50' },
+                      { label: 'Experience', value: (service.experieceYear || '0') + ' years', icon: Award, color: '#ef4136', bg: 'bg-red-50' },
+                      { label: 'Delivery', value: service.deliveryDays + ' days', icon: CheckCircle2, color: '#10B981', bg: 'bg-emerald-50' },
+                      { label: 'Availability', value: service.availability === 'yes' ? 'Available' : 'Busy', icon: Clock, color: '#3B82F6', bg: 'bg-blue-50' },
+                      { label: 'Rating', value: '5.0', icon: Star, color: '#F59E0B', bg: 'bg-amber-50' },
                     ].map((stat) => (
                       <div key={stat.label} className={`${stat.bg} rounded-2xl p-4 transition-transform hover:scale-105 cursor-default`}>
                         <stat.icon size={20} style={{ color: stat.color }} className="mb-2" />
@@ -180,11 +188,11 @@ export default function ServiceDetails() {
 
                 {/* Skills/Tools Tags */}
                 <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-                  <h2 className="font-black text-xl mb-6 text-[#0D2E5E]">Expertise & Tools</h2>
+                  <h2 className="font-black text-xl mb-6 text-[#0D2E5E]">Qualification & Expertise</h2>
                   <div className="flex flex-wrap gap-2">
-                    {service.skills?.map(skill => (
-                      <span key={skill} className="px-4 py-2 rounded-xl bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">
-                        {skill}
+                    {service.qualification?.split(',').map((q: string) => (
+                      <span key={q} className="px-4 py-2 rounded-xl bg-slate-50 text-slate-600 text-xs font-bold border border-slate-100">
+                        {q.trim()}
                       </span>
                     ))}
                   </div>
@@ -199,10 +207,10 @@ export default function ServiceDetails() {
                 <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-2xl">
                   <div className="flex items-center gap-1">
                     <Star size={18} className="text-[#F59E0B] fill-[#F59E0B]" />
-                    <span className="font-black text-[#1E293B]">{service.rating}</span>
+                    <span className="font-black text-[#1E293B]">5.0</span>
                   </div>
                   <div className="w-px h-4 bg-slate-200" />
-                  <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">{service.reviews} Reviews</span>
+                  <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">0 Reviews</span>
                 </div>
               </div>
 
@@ -239,12 +247,14 @@ export default function ServiceDetails() {
           {/* Sidebar - Contact Card (4 cols) */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-100 p-8 sticky top-24">
-              
-              {/* Provider Header */}
               <div className="text-center mb-8">
                 <div className="relative inline-block mb-4">
-                  <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-[#0D2E5E] to-[#1E40AF] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-blue-200">
-                    {service.provider.charAt(0)}
+                  <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-[#0D2E5E] to-[#1E40AF] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-blue-200 overflow-hidden">
+                    {service.user?.logo ? (
+                      <img src={service.user.logo} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      providerName.charAt(0)
+                    )}
                   </div>
                   <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white p-1 shadow-lg">
                     <div className="w-full h-full rounded-full bg-[#10B981] flex items-center justify-center text-white">
@@ -252,10 +262,10 @@ export default function ServiceDetails() {
                     </div>
                   </div>
                 </div>
-                <h3 className="font-black text-xl text-[#0D2E5E] mb-1">{service.provider}</h3>
+                <h3 className="font-black text-xl text-[#0D2E5E] mb-1">{providerName}</h3>
                 <div className="flex items-center justify-center gap-1.5 text-slate-400">
                   <MapPin size={14} className="text-red-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider">{service.location}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{service.city || 'Pakistan'}</span>
                 </div>
               </div>
 
@@ -265,10 +275,10 @@ export default function ServiceDetails() {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-sm font-black text-[#0D2E5E] mt-2">Rs.</span>
                   <span className="text-4xl font-black text-[#ef4136] tracking-tighter">
-                    {service.price.toLocaleString()}
+                    {Number(service.price).toLocaleString()}
                   </span>
                 </div>
-                <div className="text-xs font-bold text-slate-500">{service.unit}</div>
+                <div className="text-xs font-bold text-slate-500">{service.price_type}</div>
               </div>
 
               {/* Contact Actions */}
@@ -298,7 +308,7 @@ export default function ServiceDetails() {
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                       <div className="w-full py-4 rounded-2xl font-black text-[#ef4136] bg-red-50 border-2 border-red-100 flex items-center justify-center gap-3">
                         <Phone size={20} />
-                        {service.phone}
+                        {providerPhone}
                       </div>
                       <button
                         onClick={handleCall}
@@ -347,13 +357,3 @@ export default function ServiceDetails() {
   );
 }
 
-const SearchX = ({ size, className }: { size: number, className: string }) => (
-  <div className={className} style={{ width: size, height: size }}>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      <line x1="8" y1="8" x2="14" y2="14" />
-      <line x1="14" y1="8" x2="8" y2="14" />
-    </svg>
-  </div>
-);

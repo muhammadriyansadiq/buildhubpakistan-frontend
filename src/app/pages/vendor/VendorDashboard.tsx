@@ -402,7 +402,7 @@ export default function VendorDashboard() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [storeForm, setStoreForm] = useState({
     shopName: '', logo: null as File | null, shopCoverImage: null as File | null,
-    address: '', cnic: '', ntn: '', businessLocation: '', warehouseLocation: '',
+    address: '', cnicNumber: '', ntnNumber: '', businessLocation: '', warehouseLocation: '',
     returnLocation: '', accountType: 'retailer'
   });
   const [bankForm, setBankForm] = useState({
@@ -426,6 +426,8 @@ export default function VendorDashboard() {
           businessAddress: storeForm.businessLocation,
           warehouseAddress: storeForm.warehouseLocation,
           returnAddress: storeForm.returnLocation,
+          cnicNumber: storeForm.cnicNumber,
+          ntnNumber: storeForm.ntnNumber,
         });
         toast.success("Business info saved");
       } catch (err) {
@@ -2505,75 +2507,130 @@ export default function VendorDashboard() {
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Logo</label>
-                          <input
-                            type="file"
-                            id="logo-upload"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) setStoreForm({ ...storeForm, logo: file });
-                            }}
-                          />
-                          <div
-                            onClick={() => document.getElementById('logo-upload')?.click()}
-                            className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                            style={{ borderColor: storeForm.logo ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.logo ? '#F0FDF4' : 'transparent' }}
-                          >
-                            {storeForm.logo ? (
-                              <div className="flex flex-col items-center w-full">
-                                <img
-                                  src={URL.createObjectURL(storeForm.logo)}
-                                  alt="Logo preview"
-                                  className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
-                                />
-                                <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Logo</p>
-                              </div>
-                            ) : (
-                              <>
-                                <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
-                                <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload logo</p>
-                                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 200×200px</p>
-                              </>
-                            )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-sm font-semibold mb-3" style={{ color: '#334155' }}>Shop Logo</label>
+                            <input
+                              type="file"
+                              id="logo-upload"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) setStoreForm({ ...storeForm, logo: file });
+                              }}
+                            />
+                            <div
+                              onClick={() => document.getElementById('logo-upload')?.click()}
+                              className="group relative border-2 border-dashed rounded-[32px] p-2 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all duration-300"
+                              style={{
+                                borderColor: storeForm.logo ? '#10B981' : '#E2E8F0',
+                                backgroundColor: '#F8FAFC',
+                                minHeight: '240px'
+                              }}
+                            >
+                              {storeForm.logo ? (
+                                <div className="relative w-full h-full flex flex-col items-center p-4">
+                                  <div className="w-32 h-32 rounded-3xl overflow-hidden shadow-2xl border-4 border-white mb-4 transition-transform group-hover:scale-105 duration-300">
+                                    <img
+                                      src={URL.createObjectURL(storeForm.logo)}
+                                      alt="Logo preview"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="bg-[#10B981]/10 px-4 py-1.5 rounded-full flex items-center gap-2">
+                                    <CheckCircle2 size={14} className="text-[#10B981]" />
+                                    <span className="text-xs font-bold text-[#065F46]">Logo Selected</span>
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[30px]">
+                                    <p className="text-white font-bold text-sm">Change Logo</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center p-8">
+                                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-50 transition-colors">
+                                    <Camera size={32} className="text-[#94A3B8] group-hover:text-[#0D2E5E] transition-colors" />
+                                  </div>
+                                  <p className="font-bold text-gray-700 mb-1">Click to upload logo</p>
+                                  <p className="text-xs text-gray-400">Recommended: 400x400px (1:1)</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold mb-3" style={{ color: '#334155' }}>Shop Cover Image</label>
+                            <input
+                              type="file"
+                              id="cover-upload"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) setStoreForm({ ...storeForm, shopCoverImage: file });
+                              }}
+                            />
+                            <div
+                              onClick={() => document.getElementById('cover-upload')?.click()}
+                              className="group relative border-2 border-dashed rounded-[32px] p-2 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all duration-300"
+                              style={{
+                                borderColor: storeForm.shopCoverImage ? '#10B981' : '#E2E8F0',
+                                backgroundColor: '#F8FAFC',
+                                minHeight: '240px'
+                              }}
+                            >
+                              {storeForm.shopCoverImage ? (
+                                <div className="relative w-full h-full flex flex-col items-center p-4">
+                                  <div className="w-full h-32 rounded-2xl overflow-hidden shadow-lg border-2 border-white mb-4 transition-transform group-hover:scale-[1.02] duration-300">
+                                    <img
+                                      src={URL.createObjectURL(storeForm.shopCoverImage)}
+                                      alt="Cover preview"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="bg-[#10B981]/10 px-4 py-1.5 rounded-full flex items-center gap-2">
+                                    <CheckCircle2 size={14} className="text-[#10B981]" />
+                                    <span className="text-xs font-bold text-[#065F46]">Cover Image Selected</span>
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[30px]">
+                                    <p className="text-white font-bold text-sm">Change Cover</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center p-8">
+                                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-50 transition-colors">
+                                    <Image size={32} className="text-[#94A3B8] group-hover:text-[#0D2E5E] transition-colors" />
+                                  </div>
+                                  <p className="font-bold text-gray-700 mb-1">Click to upload cover</p>
+                                  <p className="text-xs text-gray-400">Recommended: 1200x400px (3:1)</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>Shop Cover Image</label>
-                          <input
-                            type="file"
-                            id="cover-upload"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) setStoreForm({ ...storeForm, shopCoverImage: file });
-                            }}
-                          />
-                          <div
-                            onClick={() => document.getElementById('cover-upload')?.click()}
-                            className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                            style={{ borderColor: storeForm.shopCoverImage ? '#10B981' : '#CBD5E1', backgroundColor: storeForm.shopCoverImage ? '#F0FDF4' : 'transparent' }}
-                          >
-                            {storeForm.shopCoverImage ? (
-                              <div className="flex flex-col items-center w-full">
-                                <img
-                                  src={URL.createObjectURL(storeForm.shopCoverImage)}
-                                  alt="Cover preview"
-                                  className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"
-                                />
-                                <p className="text-xs font-medium" style={{ color: '#166534' }}>Change Cover Image</p>
-                              </div>
-                            ) : (
-                              <>
-                                <Camera size={28} className="mx-auto mb-2" style={{ color: '#94A3B8' }} />
-                                <p className="text-sm font-medium" style={{ color: '#64748B' }}>Click to upload cover image</p>
-                                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>PNG, JPG up to 5MB. Recommended: 1200×400px</p>
-                              </>
-                            )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>CNIC Number *</label>
+                            <input
+                              type="text"
+                              value={storeForm.cnicNumber}
+                              onChange={(e) => setStoreForm({ ...storeForm, cnicNumber: e.target.value })}
+                              placeholder="e.g. 42101-1234567-1"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#334155' }}>NTN Number (Optional)</label>
+                            <input
+                              type="text"
+                              value={storeForm.ntnNumber}
+                              onChange={(e) => setStoreForm({ ...storeForm, ntnNumber: e.target.value })}
+                              placeholder="e.g. 1234567-8"
+                              className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                              style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                            />
                           </div>
                         </div>
 

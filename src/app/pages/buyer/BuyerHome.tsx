@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useProducts, useCategories } from '@/hooks/useProduct';
 import { useAddToCartMutation } from '@/hooks/useCart';
+import { useGigs } from '@/hooks/useGigs';
 import { Loader2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,16 +46,8 @@ const banners = [
 
 // Mock services and brands remain as fallback or static info
 
-const services = [
-  { id: 1, name: 'Structural Engineering', provider: 'Eng. Ahmad Raza', rating: 4.9, price: 'From Rs. 15,000', location: 'Lahore', img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=200&h=150&fit=crop', badge: 'Top Rated', priceMin: 15000 },
-  { id: 2, name: 'Interior Architecture', provider: 'Arch. Fatima Khan', rating: 4.8, price: 'From Rs. 8,000', location: 'Karachi', img: 'https://images.unsplash.com/photo-1770823556202-2eba715a415b?w=200&h=150&fit=crop', badge: 'Featured', priceMin: 8000 },
-  { id: 3, name: 'Electrical Installation', provider: 'M. Ali Electric Co.', rating: 4.6, price: 'From Rs. 5,000', location: 'Islamabad', img: 'https://images.unsplash.com/photo-1684543327925-ca57d94843d6?w=200&h=150&fit=crop', badge: 'Verified', priceMin: 5000 },
-  { id: 4, name: 'Plumbing Services', provider: 'Khan Plumbers', rating: 4.5, price: 'From Rs. 3,000', location: 'Lahore', img: 'https://images.unsplash.com/photo-1556995378-e0a5c979ec57?w=200&h=150&fit=crop', badge: 'Popular', priceMin: 3000 },
-  { id: 5, name: 'Civil Engineering', provider: 'Eng. Bilal Ahmed', rating: 4.7, price: 'From Rs. 12,000', location: 'Rawalpindi', img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=200&h=150&fit=crop', badge: 'Certified', priceMin: 12000 },
-  { id: 6, name: 'HVAC Installation', provider: 'Cool Tech Services', rating: 4.4, price: 'From Rs. 6,000', location: 'Karachi', img: 'https://images.unsplash.com/photo-1684543327925-ca57d94843d6?w=200&h=150&fit=crop', badge: 'Expert', priceMin: 6000 },
-  { id: 7, name: 'Masonry Work', provider: 'Master Builders', rating: 4.6, price: 'From Rs. 4,000', location: 'Lahore', img: 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=200&h=150&fit=crop', badge: 'Reliable', priceMin: 4000 },
-  { id: 8, name: 'Painting & Finishing', provider: 'Pro Painters', rating: 4.3, price: 'From Rs. 2,500', location: 'Islamabad', img: 'https://images.unsplash.com/photo-1698216543278-c382147e9fbf?w=200&h=150&fit=crop', badge: 'Quality', priceMin: 2500 },
-];
+// Mock services and brands remain as fallback or static info
+
 
 const brands = [
   { name: 'Bestway', cat: 'Cement', color: '#1a4f8b', logo: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=100&h=100&fit=crop' },
@@ -73,8 +66,10 @@ export default function BuyerHome() {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const { data: productsData, isLoading: productsLoading } = useProducts();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
+  const { data: gigsData, isLoading: gigsLoading } = useGigs({ limit: 4 });
   const products = Array.isArray(productsData) ? productsData : [];
-  const categoriesList = Array.isArray(categoriesData) ? categoriesData.slice(0, 10) : [];
+  const categoriesList = Array.isArray(categoriesData) ? categoriesData.slice(0, 8) : [];
+  const gigsList = gigsData?.data || [];
 
   const { mutateAsync: addToCart } = useAddToCartMutation();
   const [addingProductId, setAddingProductId] = useState<number | null>(null);
@@ -192,7 +187,7 @@ export default function BuyerHome() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categoriesLoading ? (
-              Array.from({ length: 10 }).map((_, i) => (
+              Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl h-48 animate-pulse border shadow-sm" style={{ borderColor: '#E2E8F0' }} />
               ))
             ) : categoriesList.length > 0 ? (
@@ -375,32 +370,44 @@ export default function BuyerHome() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {services.map((service) => (
-              <div 
-                key={service.id} 
-                onClick={() => router.push(`/services/${service.id}`)}
-                className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer group" 
-                style={{ borderColor: '#E2E8F0' }}
-              >
-                <div className="relative" style={{ height: '120px' }}>
-                  <img src={service.img} alt={service.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
-                    {service.badge}
-                  </span>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-sm mb-0.5" style={{ color: '#1E293B' }}>{service.name}</h3>
-                  <p className="text-xs mb-2" style={{ color: '#64748B' }}>by {service.provider}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs flex items-center gap-1" style={{ color: '#F59E0B' }}>
-                      <Star size={11} style={{ fill: '#F59E0B' }} /> {service.rating}
+            {gigsLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl h-48 animate-pulse border shadow-sm" style={{ borderColor: '#E2E8F0' }} />
+              ))
+            ) : gigsList.length > 0 ? (
+              gigsList.map((gig) => (
+                <div 
+                  key={gig.id} 
+                  onClick={() => router.push(`/services/${gig.id}`)}
+                  className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all cursor-pointer group" 
+                  style={{ borderColor: '#E2E8F0' }}
+                >
+                  <div className="relative" style={{ height: '120px' }}>
+                    <img 
+                      src={gig.images && gig.images.length > 0 ? gig.images[0] : 'https://images.unsplash.com/photo-1774600166818-e554a4d4c376?w=200&h=150&fit=crop'} 
+                      alt={gig.title} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    />
+                    <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.3)' }} />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#ef4136' }}>
+                      {gig.category?.title || 'Service'}
                     </span>
-                    <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>{service.price}</span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-sm mb-0.5" style={{ color: '#1E293B' }}>{gig.title}</h3>
+                    <p className="text-xs mb-2" style={{ color: '#64748B' }}>by {gig.user?.fullName || 'Verified Provider'}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs flex items-center gap-1" style={{ color: '#F59E0B' }}>
+                        <Star size={11} style={{ fill: '#F59E0B' }} /> 5.0
+                      </span>
+                      <span className="text-xs font-semibold" style={{ color: '#ef4136' }}>From Rs. {Number(gig.price).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="col-span-full py-8 text-center text-gray-500">No services found</div>
+            )}
           </div>
         </section>
 

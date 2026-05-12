@@ -46,6 +46,8 @@ export interface CompleteBusinessStep3Payload {
   businessAddress?: string;
   warehouseAddress?: string;
   returnAddress?: string;
+  cnicNumber?: string;
+  ntnNumber?: string;
 }
 
 const completeBusinessStep3 = async (payload: CompleteBusinessStep3Payload) => {
@@ -58,6 +60,8 @@ const completeBusinessStep3 = async (payload: CompleteBusinessStep3Payload) => {
   if (payload.businessAddress) formData.append('businessAddress', payload.businessAddress);
   if (payload.warehouseAddress) formData.append('warehouseAddress', payload.warehouseAddress);
   if (payload.returnAddress) formData.append('returnAddress', payload.returnAddress);
+  if (payload.cnicNumber) formData.append('cnicNumber', payload.cnicNumber);
+  if (payload.ntnNumber) formData.append('ntnNumber', payload.ntnNumber);
 
   const { data } = await apiClient.post('/auth/register/step3', formData, {
     headers: {

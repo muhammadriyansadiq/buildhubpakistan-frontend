@@ -44,13 +44,14 @@ export interface UsersResponse {
   lastPage: number;
 }
 
-export const useUsers = (filters: { role?: string; limit?: number; page?: number; isApproved?: string } = {}) => {
+export const useUsers = (filters: { role?: string; limit?: number; page?: number; isApproved?: string } = {}, options?: any) => {
   return useQuery<UsersResponse>({
     queryKey: ['users', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/users', { params: filters });
       return data;
     },
+    ...options
   });
 };
 

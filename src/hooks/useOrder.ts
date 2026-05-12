@@ -72,13 +72,14 @@ export interface OrdersResponse {
   lastPage: number;
 }
 
-export const useOrders = (filters?: any) => {
+export const useOrders = (filters?: any, options?: any) => {
   return useQuery<OrdersResponse>({
     queryKey: ['orders', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/orders', { params: filters });
       return data;
     },
+    ...options
   });
 };
 
@@ -93,13 +94,14 @@ export const useOrderDetails = (id: string | number) => {
   });
 };
 
-export const useOrderStats = (filters?: any) => {
+export const useOrderStats = (filters?: any, options?: any) => {
   return useQuery({
     queryKey: ['order-stats', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/orders/stats', { params: filters });
       return data.data as OrderStats;
     },
+    ...options
   });
 };
 

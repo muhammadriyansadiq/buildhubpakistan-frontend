@@ -14,12 +14,12 @@ import { useProducts, Product } from '@/hooks/useProduct';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export default function BuyerNavbar() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: cartItems } = useCart();
-  const cartCount = cartItems?.length || 0;
   const [user, setUser] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: cartItems } = useCart({ enabled: !!user });
+  const cartCount = cartItems?.length || 0;
   const [showSuggestions, setShowSuggestions] = useState(false);
   const router = useRouter();
 
@@ -148,9 +148,9 @@ export default function BuyerNavbar() {
               {/* Suggestions Dropdown */}
               {showSuggestions && searchQuery.length > 1 && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowSuggestions(false)} 
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowSuggestions(false)}
                   />
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                     {suggestionsLoading ? (
@@ -170,8 +170,8 @@ export default function BuyerNavbar() {
                             className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group text-left"
                           >
                             <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
-                              <img 
-                                src={product.images?.[0] || 'https://placehold.co/40x40'} 
+                              <img
+                                src={product.images?.[0] || 'https://placehold.co/40x40'}
                                 alt={product.title}
                                 className="w-full h-full object-cover"
                               />
@@ -240,7 +240,7 @@ export default function BuyerNavbar() {
                   </span>
                 )}
               </button>
-              
+
               {isMounted && user ? (
                 <>
                   <button

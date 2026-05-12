@@ -54,13 +54,14 @@ export interface QuotationStats {
 
 // --- Quotation Hooks ---
 
-export const useQuotations = (filters?: any) => {
+export const useQuotations = (filters?: any, options?: any) => {
   return useQuery({
     queryKey: ['quotations', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/quotations', { params: filters });
       return data; // Returns the full pagination object
     },
+    ...options
   });
 };
 
@@ -75,13 +76,14 @@ export const useQuotationDetails = (id: number | string | null) => {
   });
 };
 
-export const useQuotationStats = (filters?: any) => {
+export const useQuotationStats = (filters?: any, options?: any) => {
   return useQuery({
     queryKey: ['quotation-stats', filters],
     queryFn: async () => {
       const { data } = await apiClient.get('/quotations/stats', { params: filters });
       return data.data as QuotationStats;
     },
+    ...options
   });
 };
 
