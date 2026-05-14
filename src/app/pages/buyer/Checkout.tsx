@@ -533,30 +533,6 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Order Items */}
-                <div className="bg-white rounded-2xl shadow-sm border p-6" style={{ borderColor: '#E2E8F0' }}>
-                  <h3 className="font-bold mb-4" style={{ color: '#3e3e3e' }}>Order Items</h3>
-                  <div className="space-y-3">
-                    {cartLoading ? (
-                      <div className="flex justify-center py-4">
-                        <Loader2 size={24} className="animate-spin" style={{ color: '#ef4136' }} />
-                      </div>
-                    ) : cartItems?.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 pb-3 border-b last:border-0" style={{ borderColor: '#E2E8F0' }}>
-                        <img
-                          src={item.product.images && item.product.images.length > 0 ? `${apiClient.defaults.baseURL?.replace('/api', '')}/${item.product.images[0]}` : 'https://placehold.co/100x100?text=No+Image'}
-                          alt={item.product.title}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm mb-1" style={{ color: '#3e3e3e' }}>{item.product.title}</p>
-                          <p className="text-xs" style={{ color: '#94A3B8' }}>Qty: {item.quantity}</p>
-                        </div>
-                        <p className="font-bold" style={{ color: '#3e3e3e' }}>Rs. {Number(item.totalPrice).toLocaleString()}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 <div className="flex gap-3">
                   <button
