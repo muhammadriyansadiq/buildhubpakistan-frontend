@@ -3,11 +3,23 @@ import { toast } from 'sonner';
 import { ENV } from '../config/env';
 
 const apiClient = axios.create({
-  baseURL: '', // Using empty baseURL and prefixing hooks with /api for proxying
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Request interceptor to handle URLs that already start with /api
+apiClient.interceptors.request.use(
+  (config) => {
+    if (config.url && config.url.startsWith('/api')) {
+      config.url = config.url.replace(/^\/api/, '');
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
