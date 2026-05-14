@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://builder-pi-two.vercel.app/api/:path*',
+        destination: 'http://localhost:5000/api/:path*',
       },
     ];
   },
